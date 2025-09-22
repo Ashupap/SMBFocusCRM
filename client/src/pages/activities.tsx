@@ -161,8 +161,8 @@ export default function Activities() {
       subject: formData.get("subject"),
       description: formData.get("description"),
       scheduledAt: formData.get("scheduledAt") ? new Date(formData.get("scheduledAt") as string) : null,
-      contactId: formData.get("contactId") || null,
-      dealId: formData.get("dealId") || null,
+      contactId: (formData.get("contactId") as string) === "none" ? null : (formData.get("contactId") as string) || null,
+      dealId: (formData.get("dealId") as string) === "none" ? null : (formData.get("dealId") as string) || null,
       isCompleted: formData.get("isCompleted") === "on",
     };
 
@@ -282,12 +282,12 @@ export default function Activities() {
 
                   <div>
                     <Label htmlFor="contactId">Contact</Label>
-                    <Select name="contactId" defaultValue={editingActivity?.contactId || ""}>
+                    <Select name="contactId" defaultValue={editingActivity?.contactId || "none"}>
                       <SelectTrigger data-testid="select-activity-contact">
                         <SelectValue placeholder="Select a contact (optional)" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">No contact</SelectItem>
+                        <SelectItem value="none">No contact</SelectItem>
                         {contacts?.map((contact) => (
                           <SelectItem key={contact.id} value={contact.id}>
                             {contact.firstName} {contact.lastName}
@@ -299,12 +299,12 @@ export default function Activities() {
 
                   <div>
                     <Label htmlFor="dealId">Deal</Label>
-                    <Select name="dealId" defaultValue={editingActivity?.dealId || ""}>
+                    <Select name="dealId" defaultValue={editingActivity?.dealId || "none"}>
                       <SelectTrigger data-testid="select-activity-deal">
                         <SelectValue placeholder="Select a deal (optional)" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">No deal</SelectItem>
+                        <SelectItem value="none">No deal</SelectItem>
                         {deals?.map((deal) => (
                           <SelectItem key={deal.id} value={deal.id}>
                             {deal.title}

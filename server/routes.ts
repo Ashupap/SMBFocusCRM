@@ -314,7 +314,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/activities', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const activityData = insertActivitySchema.parse({ ...req.body, ownerId: userId });
+      // Convert date strings and handle "none" values
+      const requestData = { ...req.body, ownerId: userId };
+      if (requestData.scheduledAt && typeof requestData.scheduledAt === 'string') {
+        requestData.scheduledAt = new Date(requestData.scheduledAt);
+      }
+      if (requestData.contactId === "none") {
+        requestData.contactId = null;
+      }
+      if (requestData.dealId === "none") {
+        requestData.dealId = null;
+      }
+      const activityData = insertActivitySchema.parse(requestData);
       const activity = await storage.createActivity(activityData);
       res.status(201).json(activity);
     } catch (error) {
@@ -328,7 +339,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put('/api/activities/:id', isAuthenticated, async (req: any, res) => {
     try {
-      const activityData = insertActivitySchema.partial().parse(req.body);
+      // Convert date strings and handle "none" values
+      const requestData = { ...req.body };
+      if (requestData.scheduledAt && typeof requestData.scheduledAt === 'string') {
+        requestData.scheduledAt = new Date(requestData.scheduledAt);
+      }
+      if (requestData.contactId === "none") {
+        requestData.contactId = null;
+      }
+      if (requestData.dealId === "none") {
+        requestData.dealId = null;
+      }
+      const activityData = insertActivitySchema.partial().parse(requestData);
       const activity = await storage.updateActivity(req.params.id, activityData);
       res.json(activity);
     } catch (error) {
