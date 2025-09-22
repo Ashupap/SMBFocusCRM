@@ -222,6 +222,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/contacts/export', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const contacts = await storage.getContacts(userId);
+      
+      // Transform contacts for export, including company name
+      const exportData = contacts.map(contact => ({
+        firstName: contact.firstName,
+        lastName: contact.lastName,
+        email: contact.email,
+        phone: contact.phone,
+        title: contact.title,
+        companyName: contact.company?.name || '',
+        createdAt: contact.createdAt,
+      }));
+      
+      res.json(exportData);
+    } catch (error) {
+      console.error("Error exporting contacts:", error);
+      res.status(500).json({ message: "Failed to export contacts" });
+    }
+  });
+
   // Deal routes
   app.get('/api/deals', isAuthenticated, async (req: any, res) => {
     try {
@@ -283,6 +306,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting deal:", error);
       res.status(500).json({ message: "Failed to delete deal" });
+    }
+  });
+
+  app.get('/api/deals/export', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const deals = await storage.getDeals(userId);
+      
+      // Transform deals for export, including contact and company names
+      const exportData = deals.map(deal => ({
+        title: deal.title,
+        description: deal.description,
+        value: deal.value,
+        stage: deal.stage,
+        contactName: deal.contact ? `${deal.contact.firstName} ${deal.contact.lastName}` : '',
+        companyName: deal.company?.name || '',
+        expectedCloseDate: deal.expectedCloseDate,
+        createdAt: deal.createdAt,
+      }));
+      
+      res.json(exportData);
+    } catch (error) {
+      console.error("Error exporting deals:", error);
+      res.status(500).json({ message: "Failed to export deals" });
     }
   });
 

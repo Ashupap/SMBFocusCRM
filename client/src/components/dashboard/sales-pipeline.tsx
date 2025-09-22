@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import DealForm from "@/components/deals/deal-form";
 import DealCard from "@/components/deals/deal-card";
-import { Plus } from "lucide-react";
+import { convertToCSV, downloadCSV, generateTimestamp, dealExportHeaders } from "@/lib/csvUtils";
+import { Plus, Download } from "lucide-react";
 import type { PipelineStage, Deal } from "@shared/schema";
 
 interface SalesPipelineProps {
@@ -72,6 +73,49 @@ export default function SalesPipeline({ showActions = false }: SalesPipelineProp
     queryClient.invalidateQueries({ queryKey: ["/api/deals"] });
   };
 
+  const exportDealsMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("GET", "/api/deals/export");
+      return await response.json();
+    },
+    onSuccess: (data) => {
+      if (data.length === 0) {
+        toast({
+          title: "No Data to Export",
+          description: "There are no deals to export",
+          variant: "default",
+        });
+        return;
+      }
+      
+      const csvContent = convertToCSV(data, dealExportHeaders as Array<{ key: string; label: string }>);
+      const timestamp = generateTimestamp();
+      downloadCSV(csvContent, `deals_export_${timestamp}.csv`);
+      toast({
+        title: "Export Successful",
+        description: `Exported ${data.length} deals to CSV`,
+      });
+    },
+    onError: (error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Error",
+        description: "Failed to export deals",
+        variant: "destructive",
+      });
+    },
+  });
+
   if (isLoading) {
     return (
       <Card>
@@ -115,20 +159,33 @@ export default function SalesPipeline({ showActions = false }: SalesPipelineProp
             </Select>
             
             {showActions && (
-              <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button size="sm" data-testid="button-add-deal-pipeline">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Deal
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-[500px]">
-                  <DialogHeader>
-                    <DialogTitle>Create New Deal</DialogTitle>
-                  </DialogHeader>
-                  <DealForm onSuccess={handleCreateSuccess} />
-                </DialogContent>
-              </Dialog>
+              <>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => exportDealsMutation.mutate()}
+                  disabled={exportDealsMutation.isPending}
+                  data-testid="button-export-deals"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  {exportDealsMutation.isPending ? "Exporting..." : "Export CSV"}
+                </Button>
+                
+                <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button size="sm" data-testid="button-add-deal-pipeline">
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Deal
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-[500px]">
+                    <DialogHeader>
+                      <DialogTitle>Create New Deal</DialogTitle>
+                    </DialogHeader>
+                    <DealForm onSuccess={handleCreateSuccess} />
+                  </DialogContent>
+                </Dialog>
+              </>
             )}
           </div>
         </div>

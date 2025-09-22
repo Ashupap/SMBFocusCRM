@@ -9,7 +9,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import ContactForm from "./contact-form";
 import CsvImport from "../ui/csv-import";
-import { Plus, Upload, Edit, Mail, Phone, Trash2 } from "lucide-react";
+import { convertToCSV, downloadCSV, generateTimestamp, contactExportHeaders } from "@/lib/csvUtils";
+import { Plus, Upload, Download, Edit, Mail, Phone, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import type { Contact, Company } from "@shared/schema";
 
@@ -53,6 +54,49 @@ export default function ContactTable() {
       toast({
         title: "Error",
         description: "Failed to delete contact",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const exportContactsMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("GET", "/api/contacts/export");
+      return await response.json();
+    },
+    onSuccess: (data) => {
+      if (data.length === 0) {
+        toast({
+          title: "No Data to Export",
+          description: "There are no contacts to export",
+          variant: "default",
+        });
+        return;
+      }
+      
+      const csvContent = convertToCSV(data, contactExportHeaders as Array<{ key: string; label: string }>);
+      const timestamp = generateTimestamp();
+      downloadCSV(csvContent, `contacts_export_${timestamp}.csv`);
+      toast({
+        title: "Export Successful",
+        description: `Exported ${data.length} contacts to CSV`,
+      });
+    },
+    onError: (error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Error",
+        description: "Failed to export contacts",
         variant: "destructive",
       });
     },
@@ -118,6 +162,25 @@ export default function ContactTable() {
         <div className="flex items-center justify-between">
           <CardTitle>Recent Contacts</CardTitle>
           <div className="flex items-center space-x-3">
+            <Button 
+              variant="outline" 
+              onClick={() => exportContactsMutation.mutate()}
+              disabled={exportContactsMutation.isPending || !contacts?.length}
+              data-testid="button-export-contacts"
+            >
+              {exportContactsMutation.isPending ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-muted-foreground border-t-transparent rounded-full animate-spin mr-2" />
+                  Exporting...
+                </>
+              ) : (
+                <>
+                  <Download className="w-4 h-4 mr-2" />
+                  Export
+                </>
+              )}
+            </Button>
+            
             <Dialog open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen}>
               <DialogTrigger asChild>
                 <Button variant="outline" data-testid="button-import-contacts">
