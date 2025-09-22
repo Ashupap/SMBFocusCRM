@@ -99,12 +99,12 @@ export default function DealForm({ deal, onSuccess }: DealFormProps) {
     const data = {
       title: formData.get("title") as string,
       description: (formData.get("description") as string) || null,
-      value: parseFloat(formData.get("value") as string),
+      value: (formData.get("value") as string), // Send as string for decimal field
       stage: formData.get("stage") as string,
       probability: parseInt(formData.get("probability") as string),
       expectedCloseDate: formData.get("expectedCloseDate") ? new Date(formData.get("expectedCloseDate") as string) : null,
-      contactId: (formData.get("contactId") as string) || null,
-      companyId: (formData.get("companyId") as string) || null,
+      contactId: (formData.get("contactId") as string) === "none" ? null : (formData.get("contactId") as string) || null,
+      companyId: (formData.get("companyId") as string) === "none" ? null : (formData.get("companyId") as string) || null,
     };
 
     try {
@@ -206,12 +206,12 @@ export default function DealForm({ deal, onSuccess }: DealFormProps) {
 
       <div>
         <Label htmlFor="contactId">Primary Contact</Label>
-        <Select name="contactId" defaultValue={deal?.contactId || ""}>
+        <Select name="contactId" defaultValue={deal?.contactId || "none"}>
           <SelectTrigger data-testid="select-deal-contact">
             <SelectValue placeholder="Select a contact" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">No contact</SelectItem>
+            <SelectItem value="none">No contact</SelectItem>
             {contacts?.map((contact) => (
               <SelectItem key={contact.id} value={contact.id}>
                 {contact.firstName} {contact.lastName}
@@ -223,12 +223,12 @@ export default function DealForm({ deal, onSuccess }: DealFormProps) {
 
       <div>
         <Label htmlFor="companyId">Company</Label>
-        <Select name="companyId" defaultValue={deal?.companyId || ""}>
+        <Select name="companyId" defaultValue={deal?.companyId || "none"}>
           <SelectTrigger data-testid="select-deal-company">
             <SelectValue placeholder="Select a company" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">No company</SelectItem>
+            <SelectItem value="none">No company</SelectItem>
             {companies?.map((company) => (
               <SelectItem key={company.id} value={company.id}>
                 {company.name}
