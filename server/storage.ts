@@ -24,7 +24,7 @@ import {
   type PipelineStage,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, asc, count, sum, and, gte, sql } from "drizzle-orm";
+import { eq, desc, asc, count, sum, and, gte, lt, sql } from "drizzle-orm";
 
 export interface IStorage {
   // User operations (required for Replit Auth)
@@ -377,12 +377,39 @@ export class DatabaseStorage implements IStorage {
     const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
     const startOfWeek = new Date(now);
     startOfWeek.setDate(now.getDate() - now.getDay());
+    
+    const startOfQuarter = new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1);
+    const startOfLastQuarter = new Date(startOfQuarter);
+    startOfLastQuarter.setMonth(startOfLastQuarter.getMonth() - 3);
+    const endOfLastQuarter = new Date(startOfQuarter);
+    endOfLastQuarter.setDate(endOfLastQuarter.getDate() - 1);
 
     // Total revenue from won deals
     const [totalRevenueResult] = await db
       .select({ total: sum(deals.value) })
       .from(deals)
       .where(and(eq(deals.ownerId, ownerId), eq(deals.stage, 'won')));
+
+    // Previous month revenue for growth calculation
+    const [lastMonthRevenueResult] = await db
+      .select({ total: sum(deals.value) })
+      .from(deals)
+      .where(and(
+        eq(deals.ownerId, ownerId),
+        eq(deals.stage, 'won'),
+        gte(deals.createdAt, startOfLastMonth),
+        lt(deals.createdAt, startOfMonth)
+      ));
+
+    // Current month revenue
+    const [currentMonthRevenueResult] = await db
+      .select({ total: sum(deals.value) })
+      .from(deals)
+      .where(and(
+        eq(deals.ownerId, ownerId),
+        eq(deals.stage, 'won'),
+        gte(deals.createdAt, startOfMonth)
+      ));
 
     // Active deals count
     const [activeDealsResult] = await db
@@ -399,7 +426,45 @@ export class DatabaseStorage implements IStorage {
       .from(contacts)
       .where(eq(contacts.ownerId, ownerId));
 
-    // Conversion rate calculation
+    // Conversion rate calculation - current quarter
+    const [wonDealsQuarterResult] = await db
+      .select({ count: count() })
+      .from(deals)
+      .where(and(
+        eq(deals.ownerId, ownerId),
+        eq(deals.stage, 'won'),
+        gte(deals.createdAt, startOfQuarter)
+      ));
+
+    const [totalDealsQuarterResult] = await db
+      .select({ count: count() })
+      .from(deals)
+      .where(and(
+        eq(deals.ownerId, ownerId),
+        gte(deals.createdAt, startOfQuarter)
+      ));
+
+    // Conversion rate calculation - last quarter
+    const [wonDealsLastQuarterResult] = await db
+      .select({ count: count() })
+      .from(deals)
+      .where(and(
+        eq(deals.ownerId, ownerId),
+        eq(deals.stage, 'won'),
+        gte(deals.createdAt, startOfLastQuarter),
+        lt(deals.createdAt, startOfQuarter)
+      ));
+
+    const [totalDealsLastQuarterResult] = await db
+      .select({ count: count() })
+      .from(deals)
+      .where(and(
+        eq(deals.ownerId, ownerId),
+        gte(deals.createdAt, startOfLastQuarter),
+        lt(deals.createdAt, startOfQuarter)
+      ));
+
+    // Overall conversion rate
     const [wonDealsResult] = await db
       .select({ count: count() })
       .from(deals)
@@ -428,6 +493,7 @@ export class DatabaseStorage implements IStorage {
         gte(contacts.createdAt, startOfWeek)
       ));
 
+    // Calculate values
     const totalRevenue = parseFloat(totalRevenueResult.total || '0');
     const activeDeals = activeDealsResult.count;
     const totalContacts = totalContactsResult.count;
@@ -435,14 +501,32 @@ export class DatabaseStorage implements IStorage {
     const totalDealsCount = totalDealsResult.count;
     const conversionRate = totalDealsCount > 0 ? (wonDeals / totalDealsCount) * 100 : 0;
 
+    // Calculate revenue growth (current month vs last month)
+    const currentMonthRevenue = parseFloat(currentMonthRevenueResult.total || '0');
+    const lastMonthRevenue = parseFloat(lastMonthRevenueResult.total || '0');
+    const revenueGrowth = lastMonthRevenue > 0 
+      ? ((currentMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100 
+      : currentMonthRevenue > 0 ? 100 : 0;
+
+    // Calculate conversion growth (current quarter vs last quarter)
+    const currentQuarterConversion = totalDealsQuarterResult.count > 0 
+      ? (wonDealsQuarterResult.count / totalDealsQuarterResult.count) * 100 
+      : 0;
+    const lastQuarterConversion = totalDealsLastQuarterResult.count > 0 
+      ? (wonDealsLastQuarterResult.count / totalDealsLastQuarterResult.count) * 100 
+      : 0;
+    const conversionGrowth = lastQuarterConversion > 0 
+      ? currentQuarterConversion - lastQuarterConversion 
+      : currentQuarterConversion;
+
     return {
       totalRevenue,
       activeDeals,
       conversionRate,
       totalContacts,
-      revenueGrowth: 12.5, // Would calculate from previous period
+      revenueGrowth: Math.round(revenueGrowth * 100) / 100, // Round to 2 decimal places
       newDealsThisWeek: newDealsWeekResult.count,
-      conversionGrowth: 5.2, // Would calculate from previous period
+      conversionGrowth: Math.round(conversionGrowth * 100) / 100, // Round to 2 decimal places
       newContactsThisWeek: newContactsWeekResult.count,
     };
   }
