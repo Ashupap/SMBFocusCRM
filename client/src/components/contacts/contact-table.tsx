@@ -7,10 +7,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import ContactForm from "./contact-form";
 import CsvImport from "../ui/csv-import";
 import { convertToCSV, downloadCSV, generateTimestamp, contactExportHeaders } from "@/lib/csvUtils";
-import { Plus, Upload, Download, Edit, Mail, Phone, Trash2 } from "lucide-react";
+import { Plus, Upload, Download, Edit, Mail, Phone, Trash2, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import type { Contact, Company } from "@shared/schema";
 
@@ -160,66 +161,99 @@ export default function ContactTable() {
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle>Recent Contacts</CardTitle>
-          <div className="flex items-center space-x-3">
-            <Button 
-              variant="outline" 
-              onClick={() => exportContactsMutation.mutate()}
-              disabled={exportContactsMutation.isPending || !contacts?.length}
-              data-testid="button-export-contacts"
-            >
-              {exportContactsMutation.isPending ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-muted-foreground border-t-transparent rounded-full animate-spin mr-2" />
-                  Exporting...
-                </>
-              ) : (
-                <>
-                  <Download className="w-4 h-4 mr-2" />
-                  Export
-                </>
-              )}
-            </Button>
-            
-            <Dialog open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline" data-testid="button-import-contacts">
-                  <Upload className="w-4 h-4 mr-2" />
-                  Import
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Import Contacts</DialogTitle>
-                </DialogHeader>
-                <CsvImport
-                  endpoint="/api/contacts/import"
-                  onSuccess={handleImportSuccess}
-                  sampleHeaders={['firstName', 'lastName', 'email', 'phone', 'title']}
-                />
-              </DialogContent>
-            </Dialog>
-
-            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-              <DialogTrigger asChild>
-                <Button data-testid="button-add-contact">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Contact
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[500px]">
-                <DialogHeader>
-                  <DialogTitle>
-                    {editingContact ? "Edit Contact" : "Add Contact"}
-                  </DialogTitle>
-                </DialogHeader>
-                <ContactForm 
-                  contact={editingContact || undefined}
-                  onSuccess={editingContact ? handleEditSuccess : handleCreateSuccess}
-                />
-              </DialogContent>
-            </Dialog>
+          <div>
+            <CardTitle>Recent Contacts</CardTitle>
+            <p className="text-sm text-muted-foreground mt-1">
+              Manage your contact database and relationships
+            </p>
           </div>
+          <TooltipProvider>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 border-r pr-4">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="sm" 
+                      variant="outline" 
+                      onClick={() => exportContactsMutation.mutate()}
+                      disabled={exportContactsMutation.isPending || !contacts?.length}
+                      data-testid="button-export-contacts"
+                      className="min-w-[115px]"
+                    >
+                      {exportContactsMutation.isPending ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Exporting...
+                        </>
+                      ) : (
+                        <>
+                          <Download className="w-4 h-4 mr-2" />
+                          Export CSV
+                        </>
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Download all contacts as CSV file</p>
+                  </TooltipContent>
+                </Tooltip>
+                
+                <Dialog open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <DialogTrigger asChild>
+                        <Button size="sm" variant="outline" data-testid="button-import-contacts">
+                          <Upload className="w-4 h-4 mr-2" />
+                          Import CSV
+                        </Button>
+                      </DialogTrigger>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Upload contacts from CSV file</p>
+                    </TooltipContent>
+                  </Tooltip>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Import Contacts</DialogTitle>
+                    </DialogHeader>
+                    <CsvImport
+                      endpoint="/api/contacts/import"
+                      onSuccess={handleImportSuccess}
+                      sampleHeaders={['firstName', 'lastName', 'email', 'phone', 'title']}
+                    />
+                  </DialogContent>
+                </Dialog>
+              </div>
+            
+
+              <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <DialogTrigger asChild>
+                      <Button data-testid="button-add-contact">
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add Contact
+                      </Button>
+                    </DialogTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Create a new contact</p>
+                  </TooltipContent>
+                </Tooltip>
+                <DialogContent className="sm:max-w-[500px]">
+                  <DialogHeader>
+                    <DialogTitle>
+                      {editingContact ? "Edit Contact" : "Add Contact"}
+                    </DialogTitle>
+                  </DialogHeader>
+                  <ContactForm 
+                    contact={editingContact || undefined}
+                    onSuccess={editingContact ? handleEditSuccess : handleCreateSuccess}
+                  />
+                </DialogContent>
+              </Dialog>
+            </div>
+          </TooltipProvider>
         </div>
       </CardHeader>
 

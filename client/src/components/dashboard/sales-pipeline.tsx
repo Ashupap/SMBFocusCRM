@@ -10,7 +10,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import DealForm from "@/components/deals/deal-form";
 import DealCard from "@/components/deals/deal-card";
 import { convertToCSV, downloadCSV, generateTimestamp, dealExportHeaders } from "@/lib/csvUtils";
-import { Plus, Download } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Plus, Download, Loader2 } from "lucide-react";
 import type { PipelineStage, Deal } from "@shared/schema";
 
 interface SalesPipelineProps {
@@ -145,49 +146,80 @@ export default function SalesPipeline({ showActions = false }: SalesPipelineProp
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle>Sales Pipeline</CardTitle>
-          <div className="flex items-center space-x-3">
-            <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-              <SelectTrigger className="w-32" data-testid="select-pipeline-period">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="This Month">This Month</SelectItem>
-                <SelectItem value="Last Month">Last Month</SelectItem>
-                <SelectItem value="This Quarter">This Quarter</SelectItem>
-              </SelectContent>
-            </Select>
-            
-            {showActions && (
-              <>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => exportDealsMutation.mutate()}
-                  disabled={exportDealsMutation.isPending}
-                  data-testid="button-export-deals"
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  {exportDealsMutation.isPending ? "Exporting..." : "Export CSV"}
-                </Button>
-                
-                <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button size="sm" data-testid="button-add-deal-pipeline">
-                      <Plus className="w-4 h-4 mr-2" />
-                      Add Deal
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="sm:max-w-[500px]">
-                    <DialogHeader>
-                      <DialogTitle>Create New Deal</DialogTitle>
-                    </DialogHeader>
-                    <DealForm onSuccess={handleCreateSuccess} />
-                  </DialogContent>
-                </Dialog>
-              </>
-            )}
+          <div>
+            <CardTitle>Sales Pipeline</CardTitle>
+            <p className="text-sm text-muted-foreground mt-1">
+              Track deals through your sales process
+            </p>
           </div>
+          <TooltipProvider>
+            <div className="flex items-center gap-4">
+              <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
+                <SelectTrigger className="w-36" data-testid="select-pipeline-period">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="This Month">This Month</SelectItem>
+                  <SelectItem value="Last Month">Last Month</SelectItem>
+                  <SelectItem value="This Quarter">This Quarter</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              {showActions && (
+                <div className="flex items-center gap-2 border-l pl-4">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => exportDealsMutation.mutate()}
+                        disabled={exportDealsMutation.isPending}
+                        data-testid="button-export-deals"
+                        className="min-w-[115px]"
+                      >
+                        {exportDealsMutation.isPending ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Exporting...
+                          </>
+                        ) : (
+                          <>
+                            <Download className="w-4 h-4 mr-2" />
+                            Export CSV
+                          </>
+                        )}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Download all deals as CSV file</p>
+                    </TooltipContent>
+                  </Tooltip>
+                  
+                  <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <DialogTrigger asChild>
+                          <Button size="sm" data-testid="button-add-deal-pipeline">
+                            <Plus className="w-4 h-4 mr-2" />
+                            Add Deal
+                          </Button>
+                        </DialogTrigger>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Create a new deal</p>
+                      </TooltipContent>
+                    </Tooltip>
+                    <DialogContent className="sm:max-w-[500px]">
+                      <DialogHeader>
+                        <DialogTitle>Create New Deal</DialogTitle>
+                      </DialogHeader>
+                      <DealForm onSuccess={handleCreateSuccess} />
+                    </DialogContent>
+                  </Dialog>
+                </div>
+              )}
+            </div>
+          </TooltipProvider>
         </div>
       </CardHeader>
 
