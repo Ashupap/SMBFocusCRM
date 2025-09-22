@@ -159,7 +159,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/contacts', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const contactData = insertContactSchema.parse({ ...req.body, ownerId: userId });
+      // Convert "none" to null for companyId
+      const requestData = { ...req.body, ownerId: userId };
+      if (requestData.companyId === "none") {
+        requestData.companyId = null;
+      }
+      const contactData = insertContactSchema.parse(requestData);
       const contact = await storage.createContact(contactData);
       res.status(201).json(contact);
     } catch (error) {
@@ -173,7 +178,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put('/api/contacts/:id', isAuthenticated, async (req: any, res) => {
     try {
-      const contactData = insertContactSchema.partial().parse(req.body);
+      // Convert "none" to null for companyId  
+      const requestData = { ...req.body };
+      if (requestData.companyId === "none") {
+        requestData.companyId = null;
+      }
+      const contactData = insertContactSchema.partial().parse(requestData);
       const contact = await storage.updateContact(req.params.id, contactData);
       res.json(contact);
     } catch (error) {

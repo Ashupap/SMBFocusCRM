@@ -171,12 +171,12 @@ export default function ContactForm({ contact, onSuccess }: ContactFormProps) {
 
       <div>
         <Label htmlFor="companyId">Company</Label>
-        <Select name="companyId" defaultValue={contact?.companyId || ""}>
+        <Select name="companyId" defaultValue={contact?.companyId || "none"}>
           <SelectTrigger data-testid="select-contact-company">
             <SelectValue placeholder="Select a company" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">No company</SelectItem>
+            <SelectItem value="none">No company</SelectItem>
             {companies?.map((company) => (
               <SelectItem key={company.id} value={company.id}>
                 {company.name}
