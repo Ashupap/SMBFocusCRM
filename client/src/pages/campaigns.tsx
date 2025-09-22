@@ -7,6 +7,7 @@ import { apiRequest } from "@/lib/queryClient";
 import Sidebar from "@/components/layout/sidebar";
 import Header from "@/components/layout/header";
 import CampaignForm from "@/components/campaigns/campaign-form";
+import RecipientSelector from "@/components/campaigns/recipient-selector";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -21,6 +22,7 @@ export default function Campaigns() {
   const queryClient = useQueryClient();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingCampaign, setEditingCampaign] = useState<EmailCampaign | null>(null);
+  const [sendingCampaign, setSendingCampaign] = useState<EmailCampaign | null>(null);
 
   const { data: campaigns, isLoading: campaignsLoading } = useQuery<EmailCampaign[]>({
     queryKey: ["/api/campaigns"],
@@ -81,6 +83,15 @@ export default function Campaigns() {
     setEditingCampaign(null);
     setIsCreateDialogOpen(false);
     queryClient.invalidateQueries({ queryKey: ["/api/campaigns"] });
+  };
+
+  const handleSendSuccess = () => {
+    setSendingCampaign(null);
+    queryClient.invalidateQueries({ queryKey: ["/api/campaigns"] });
+  };
+
+  const handleSendCancel = () => {
+    setSendingCampaign(null);
   };
 
   const getStatusBadge = (campaign: EmailCampaign) => {
@@ -224,6 +235,7 @@ export default function Campaigns() {
                         <Button 
                           className="w-full mt-4" 
                           size="sm"
+                          onClick={() => setSendingCampaign(campaign)}
                           data-testid={`button-send-campaign-${campaign.id}`}
                         >
                           <Send className="w-4 h-4 mr-2" />
@@ -261,6 +273,26 @@ export default function Campaigns() {
         }
       }}>
         {/* Dialog content is handled above in the create dialog */}
+      </Dialog>
+
+      {/* Send Campaign Dialog */}
+      <Dialog open={!!sendingCampaign} onOpenChange={(open) => {
+        if (!open) {
+          setSendingCampaign(null);
+        }
+      }}>
+        <DialogContent className="sm:max-w-[700px] max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle>Send Email Campaign</DialogTitle>
+          </DialogHeader>
+          {sendingCampaign && (
+            <RecipientSelector
+              campaign={sendingCampaign}
+              onSuccess={handleSendSuccess}
+              onCancel={handleSendCancel}
+            />
+          )}
+        </DialogContent>
       </Dialog>
     </div>
   );
