@@ -2,7 +2,7 @@
 
 This is a comprehensive CRM (Customer Relationship Management) application built with a modern full-stack architecture. The system provides sales teams with tools to manage contacts, track deals through a sales pipeline, log activities, run email campaigns, and generate reports. It's designed for small to medium businesses looking to streamline their sales processes and improve customer relationship management.
 
-The application features a React-based frontend with a clean, professional interface using shadcn/ui components, backed by an Express.js server with PostgreSQL database integration via Drizzle ORM. Authentication is handled through Replit's OIDC system, and the application includes email functionality via SendGrid.
+The application features a React-based frontend with a clean, professional interface using shadcn/ui components, backed by an Express.js server with PostgreSQL database integration via Drizzle ORM. Authentication is handled through a custom JWT-based system with basic security features and extensible architecture, and the application includes email functionality via SendGrid.
 
 # User Preferences
 
@@ -22,7 +22,7 @@ Preferred communication style: Simple, everyday language.
 - **Runtime**: Node.js with Express.js framework
 - **Language**: TypeScript with ES modules
 - **API Design**: RESTful API with structured error handling
-- **Session Management**: Express sessions with PostgreSQL storage
+- **Token Management**: JWT-based stateless authentication
 - **File Structure**: Monorepo structure with shared types between client and server
 
 ## Database Architecture
@@ -32,10 +32,10 @@ Preferred communication style: Simple, everyday language.
 - **Migrations**: Drizzle Kit for database migrations
 
 ## Authentication & Authorization
-- **Provider**: Replit OIDC (OpenID Connect) integration
-- **Strategy**: Passport.js with OpenID Connect strategy
-- **Session Storage**: PostgreSQL-backed sessions with configurable TTL
-- **Security**: HTTP-only cookies with secure flags in production
+- **Provider**: Custom JWT (JSON Web Token) authentication system
+- **Strategy**: JWT-based authentication with access and refresh tokens
+- **Token Storage**: Access tokens and refresh tokens (configurable expiry)
+- **Security**: Argon2 password hashing, refresh token rotation, audit logging (implemented), with schema support for account lockout and rate limiting
 
 ## Data Models
 The system manages five core entities:
@@ -60,7 +60,7 @@ The system manages five core entities:
 - **Drizzle ORM**: Type-safe database operations and schema management
 
 ## Authentication Services
-- **Replit OIDC**: Identity provider for user authentication and authorization
+- **Custom JWT System**: Self-managed authentication with basic security features and extensible architecture
 
 ## Email Services
 - **SendGrid**: Transactional and marketing email delivery service
