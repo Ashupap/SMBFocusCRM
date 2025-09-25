@@ -4,7 +4,7 @@ import { BarChart3, Users, Mail, Target, TrendingUp, Shield } from "lucide-react
 
 export default function Landing() {
   const handleLogin = () => {
-    window.location.href = "/api/login";
+    window.location.href = "/auth/login";
   };
 
   return (

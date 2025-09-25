@@ -6,6 +6,10 @@ import {
   activities,
   emailCampaigns,
   campaignRecipients,
+  refreshTokens,
+  emailVerificationTokens,
+  passwordResetTokens,
+  auditLogs,
   type User,
   type UpsertUser,
   type Company,
@@ -20,11 +24,19 @@ import {
   type InsertEmailCampaign,
   type CampaignRecipient,
   type InsertCampaignRecipient,
+  type RefreshToken,
+  type InsertRefreshToken,
+  type EmailVerificationToken,
+  type InsertEmailVerificationToken,
+  type PasswordResetToken,
+  type InsertPasswordResetToken,
+  type AuditLog,
+  type InsertAuditLog,
   type DashboardMetrics,
   type PipelineStage,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, asc, count, sum, and, gte, lt, sql } from "drizzle-orm";
+import { eq, desc, asc, count, sum, and, gte, lt, sql, isNull } from "drizzle-orm";
 
 export interface IStorage {
   // User operations (required for Replit Auth)
@@ -74,6 +86,34 @@ export interface IStorage {
   // Dashboard operations
   getDashboardMetrics(ownerId: string): Promise<DashboardMetrics>;
   getRecentActivities(ownerId: string, limit?: number): Promise<(Activity & { contact?: Contact; deal?: Deal })[]>;
+
+  // Authentication operations
+  // User auth methods
+  getUserByEmail(email: string): Promise<User | undefined>;
+  createUser(user: Omit<UpsertUser, 'id'>): Promise<User>;
+  updateUserPassword(id: string, hashedPassword: string): Promise<void>;
+  updateUserFailedLogin(id: string, failedCount: number, lockedUntil: Date | null): Promise<void>;
+  
+  // Refresh token operations
+  createRefreshToken(token: InsertRefreshToken): Promise<RefreshToken>;
+  getRefreshTokenByHash(tokenHash: string): Promise<RefreshToken | undefined>;
+  revokeRefreshToken(tokenHash: string): Promise<void>;
+  revokeAllRefreshTokensForUser(userId: string): Promise<void>;
+  cleanupExpiredRefreshTokens(): Promise<void>;
+
+  // Email verification operations
+  createEmailVerificationToken(token: InsertEmailVerificationToken): Promise<EmailVerificationToken>;
+  getEmailVerificationToken(tokenHash: string): Promise<EmailVerificationToken | undefined>;
+  deleteEmailVerificationToken(tokenHash: string): Promise<void>;
+
+  // Password reset operations
+  createPasswordResetToken(token: InsertPasswordResetToken): Promise<PasswordResetToken>;
+  getPasswordResetToken(tokenHash: string): Promise<PasswordResetToken | undefined>;
+  deletePasswordResetToken(tokenHash: string): Promise<void>;
+
+  // Audit log operations
+  createAuditLog(log: InsertAuditLog): Promise<AuditLog>;
+  getAuditLogs(userId: string, limit?: number): Promise<AuditLog[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -100,6 +140,8 @@ export class DatabaseStorage implements IStorage {
 
   // Company operations
   async getCompanies(ownerId: string): Promise<Company[]> {
+    // Note: Companies don't have ownerId field - they are shared across all users in this CRM
+    // This is by design for B2B CRM where companies are shared entities
     return await db.select().from(companies).orderBy(asc(companies.name));
   }
 
@@ -547,6 +589,154 @@ export class DatabaseStorage implements IStorage {
           deal: row.deals || undefined,
         }))
       );
+  }
+
+  // Authentication method implementations
+  
+  // User auth methods
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user;
+  }
+
+  async createUser(userData: Omit<UpsertUser, 'id'>): Promise<User> {
+    const [user] = await db
+      .insert(users)
+      .values(userData)
+      .returning();
+    return user;
+  }
+
+  async updateUserPassword(id: string, hashedPassword: string): Promise<void> {
+    await db
+      .update(users)
+      .set({ 
+        passwordHash: hashedPassword,
+        updatedAt: new Date()
+      })
+      .where(eq(users.id, id));
+  }
+
+  async updateUserFailedLogin(id: string, failedCount: number, lockedUntil: Date | null): Promise<void> {
+    await db
+      .update(users)
+      .set({ 
+        failedLoginCount: failedCount,
+        lockedUntil: lockedUntil,
+        lastLoginAt: failedCount === 0 ? new Date() : undefined, // Update last login on successful reset
+        updatedAt: new Date()
+      })
+      .where(eq(users.id, id));
+  }
+  
+  // Refresh token operations
+  async createRefreshToken(token: InsertRefreshToken): Promise<RefreshToken> {
+    const [refreshToken] = await db
+      .insert(refreshTokens)
+      .values(token)
+      .returning();
+    return refreshToken;
+  }
+
+  async getRefreshTokenByHash(tokenHash: string): Promise<RefreshToken | undefined> {
+    const [token] = await db
+      .select()
+      .from(refreshTokens)
+      .where(and(
+        eq(refreshTokens.tokenHash, tokenHash),
+        isNull(refreshTokens.revokedAt)
+      ));
+    return token;
+  }
+
+  async revokeRefreshToken(tokenHash: string): Promise<void> {
+    await db
+      .update(refreshTokens)
+      .set({ revokedAt: new Date() })
+      .where(eq(refreshTokens.tokenHash, tokenHash));
+  }
+
+  async revokeAllRefreshTokensForUser(userId: string): Promise<void> {
+    await db
+      .update(refreshTokens)
+      .set({ revokedAt: new Date() })
+      .where(eq(refreshTokens.userId, userId));
+  }
+
+  async cleanupExpiredRefreshTokens(): Promise<void> {
+    await db
+      .delete(refreshTokens)
+      .where(lt(refreshTokens.expiresAt, new Date()));
+  }
+
+  // Email verification operations
+  async createEmailVerificationToken(token: InsertEmailVerificationToken): Promise<EmailVerificationToken> {
+    const [verificationToken] = await db
+      .insert(emailVerificationTokens)
+      .values(token)
+      .returning();
+    return verificationToken;
+  }
+
+  async getEmailVerificationToken(tokenHash: string): Promise<EmailVerificationToken | undefined> {
+    const [token] = await db
+      .select()
+      .from(emailVerificationTokens)
+      .where(and(
+        eq(emailVerificationTokens.tokenHash, tokenHash),
+        gte(emailVerificationTokens.expiresAt, new Date())
+      ));
+    return token;
+  }
+
+  async deleteEmailVerificationToken(tokenHash: string): Promise<void> {
+    await db
+      .delete(emailVerificationTokens)
+      .where(eq(emailVerificationTokens.tokenHash, tokenHash));
+  }
+
+  // Password reset operations
+  async createPasswordResetToken(token: InsertPasswordResetToken): Promise<PasswordResetToken> {
+    const [resetToken] = await db
+      .insert(passwordResetTokens)
+      .values(token)
+      .returning();
+    return resetToken;
+  }
+
+  async getPasswordResetToken(tokenHash: string): Promise<PasswordResetToken | undefined> {
+    const [token] = await db
+      .select()
+      .from(passwordResetTokens)
+      .where(and(
+        eq(passwordResetTokens.tokenHash, tokenHash),
+        gte(passwordResetTokens.expiresAt, new Date())
+      ));
+    return token;
+  }
+
+  async deletePasswordResetToken(tokenHash: string): Promise<void> {
+    await db
+      .delete(passwordResetTokens)
+      .where(eq(passwordResetTokens.tokenHash, tokenHash));
+  }
+
+  // Audit log operations
+  async createAuditLog(log: InsertAuditLog): Promise<AuditLog> {
+    const [auditLog] = await db
+      .insert(auditLogs)
+      .values(log)
+      .returning();
+    return auditLog;
+  }
+
+  async getAuditLogs(userId: string, limit = 100): Promise<AuditLog[]> {
+    return await db
+      .select()
+      .from(auditLogs)
+      .where(eq(auditLogs.userId, userId))
+      .orderBy(desc(auditLogs.createdAt))
+      .limit(limit);
   }
 }
 

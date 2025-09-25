@@ -31,10 +31,10 @@ const settingsNavigation = [
 
 export default function Sidebar() {
   const [location] = useLocation();
-  const { user } = useAuth() as { user: User | undefined };
+  const { user, logout } = useAuth() as { user: User | undefined; logout: () => void };
 
   const handleLogout = () => {
-    window.location.href = "/api/logout";
+    logout();
   };
 
   return (

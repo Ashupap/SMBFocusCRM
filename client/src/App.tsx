@@ -6,6 +6,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
 import NotFound from "@/pages/not-found";
 import Landing from "@/pages/landing";
+import Login from "@/pages/auth/login";
+import Register from "@/pages/auth/register";
 import Dashboard from "@/pages/dashboard";
 import Contacts from "@/pages/contacts";
 import Deals from "@/pages/deals";
@@ -18,11 +20,23 @@ function Router() {
 
   return (
     <Switch>
-      {isLoading || !isAuthenticated ? (
+      {/* Authentication routes - always accessible */}
+      <Route path="/auth/login" component={Login} />
+      <Route path="/auth/register" component={Register} />
+      
+      {/* Protected routes */}
+      {isLoading ? (
+        <Route path="*">
+          <div className="min-h-screen flex items-center justify-center">
+            <div className="text-lg">Loading...</div>
+          </div>
+        </Route>
+      ) : !isAuthenticated ? (
         <Route path="/" component={Landing} />
       ) : (
         <>
           <Route path="/" component={Dashboard} />
+          <Route path="/dashboard" component={Dashboard} />
           <Route path="/contacts" component={Contacts} />
           <Route path="/deals" component={Deals} />
           <Route path="/activities" component={Activities} />
