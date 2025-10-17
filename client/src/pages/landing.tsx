@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart3, Users, Mail, Target, TrendingUp, Shield, Sparkles, Zap, Brain, LineChart, Settings, Lock } from "lucide-react";
+import { BarChart3, Users, Mail, Target, TrendingUp, Shield, Sparkles, Zap, Brain, LineChart, Settings, Lock, Kanban, UserCircle2, Send, CalendarCheck, PieChart, ShieldCheck } from "lucide-react";
 import { motion, useInView } from "framer-motion";
 import { useRef, useEffect, useState } from "react";
 
@@ -208,42 +208,42 @@ export default function Landing() {
         >
           {[
             {
-              icon: BarChart3,
+              icon: Kanban,
               title: "Visual Sales Pipeline",
               description: "Drag-and-drop Kanban board with AI-powered deal insights and forecasting",
               color: "from-blue-500 to-cyan-500",
               bgColor: "bg-blue-500/10"
             },
             {
-              icon: Users,
+              icon: UserCircle2,
               title: "Smart Contact Management",
               description: "360° customer profiles with AI lead scoring and relationship intelligence",
               color: "from-purple-500 to-pink-500",
               bgColor: "bg-purple-500/10"
             },
             {
-              icon: Mail,
+              icon: Send,
               title: "Email Automation",
               description: "AI-generated templates, sequences, and campaign analytics",
               color: "from-orange-500 to-red-500",
               bgColor: "bg-orange-500/10"
             },
             {
-              icon: Target,
+              icon: CalendarCheck,
               title: "Activity Tracking",
               description: "Smart scheduling with automated follow-ups and reminders",
               color: "from-green-500 to-emerald-500",
               bgColor: "bg-green-500/10"
             },
             {
-              icon: TrendingUp,
+              icon: PieChart,
               title: "Advanced Analytics",
               description: "Real-time dashboards with pipeline metrics and team performance",
               color: "from-yellow-500 to-orange-500",
               bgColor: "bg-yellow-500/10"
             },
             {
-              icon: Shield,
+              icon: ShieldCheck,
               title: "Enterprise Security",
               description: "Role-based access, API keys, and comprehensive audit logs",
               color: "from-indigo-500 to-purple-500",
