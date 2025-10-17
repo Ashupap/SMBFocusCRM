@@ -258,12 +258,12 @@ export default function Landing() {
                 <Card className="border-2 border-border/50 hover:border-primary/30 transition-all duration-300 bg-card/50 backdrop-blur-sm h-full overflow-hidden group">
                   <CardHeader>
                     <motion.div 
-                      className={`w-14 h-14 ${feature.bgColor} rounded-xl flex items-center justify-center mb-4 relative`}
+                      className={`w-14 h-14 ${feature.bgColor} rounded-xl flex items-center justify-center mb-4 relative group/icon`}
                       whileHover={{ rotate: 360 }}
                       transition={{ duration: 0.6 }}
                     >
-                      <div className={`absolute inset-0 bg-gradient-to-br ${feature.color} opacity-0 group-hover:opacity-100 transition-opacity rounded-xl`} />
-                      <feature.icon className={`w-7 h-7 bg-gradient-to-br ${feature.color} bg-clip-text text-transparent relative z-10`} />
+                      <div className={`absolute inset-0 bg-gradient-to-br ${feature.color} opacity-0 group-hover:opacity-20 transition-opacity rounded-xl`} />
+                      <feature.icon className={`w-7 h-7 relative z-10 text-primary group-hover/icon:text-white transition-colors`} />
                     </motion.div>
                     <CardTitle className="text-xl">{feature.title}</CardTitle>
                     <CardDescription className="text-base">
