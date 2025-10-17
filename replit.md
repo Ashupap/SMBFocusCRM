@@ -38,13 +38,19 @@ Preferred communication style: Simple, everyday language.
 - **Security**: Argon2 password hashing, refresh token rotation, audit logging (implemented), with schema support for account lockout and rate limiting
 
 ## Data Models
-The system manages five core entities:
-- **Users**: Authentication and profile information
+The system manages the following core entities:
+- **Users**: Authentication and profile information with role-based access control
 - **Companies**: Organization/account records with industry and contact details
 - **Contacts**: Individual contacts linked to companies with relationship tracking
 - **Deals**: Sales opportunities with pipeline stages, values, and probability tracking
 - **Activities**: Interaction logging (calls, emails, meetings, tasks, notes)
 - **Email Campaigns**: Mass email functionality with recipient tracking
+- **Email Templates & Sequences**: Reusable email templates and automated email sequences
+- **Approval Workflows**: Multi-level approval routing for deal approvals and business processes
+- **Dashboard Widgets**: Customizable dashboard with drag-and-drop widgets
+- **API Keys**: Secure API key management for external integrations
+- **Scheduled Exports**: Automated data exports with email delivery
+- **Pipeline Metrics**: Advanced analytics for pipeline conversion and performance tracking
 
 ## UI/UX Design Patterns
 - **Component Architecture**: Reusable component library with consistent design tokens
@@ -78,6 +84,61 @@ The system manages five core entities:
 - **Tailwind CSS**: Utility-first CSS framework with design system integration
 
 ## Third-party Integrations
-- **CSV Import**: File upload and parsing for bulk contact imports
+- **Data Import/Export**: 
+  - CSV and Excel (.xlsx) file upload and parsing
+  - Advanced column mapping for contacts, companies, and deals
+  - Scheduled exports with automated email delivery
+  - PapaParse for CSV processing
+  - XLSX library for Excel file handling
 - **Chart Libraries**: Recharts for dashboard analytics and reporting
 - **Date Utilities**: date-fns for date formatting and manipulation
+- **File Upload**: Multer for handling file uploads
+- **API Documentation**: Swagger/OpenAPI for comprehensive REST API documentation
+
+# Advanced Features
+
+## AI-Powered Automation
+- **Lead Scoring**: AI-based lead qualification and priority scoring
+- **Sales Forecasting**: Predictive analytics for revenue forecasting
+- **Smart Recommendations**: Automated next-best-action suggestions
+- **Email Generation**: AI-powered email template generation using OpenAI
+
+## Email Marketing
+- **Email Templates**: Reusable email templates with variable support
+- **Email Sequences**: Automated multi-step email campaigns
+- **Sequence Enrollment**: Track contacts through email sequences
+- **Campaign Analytics**: Track email opens, clicks, and engagement
+
+## Approval Workflows
+- **Multi-Level Routing**: Configure approval workflows with multiple steps
+- **Deal Approvals**: Approval routing for high-value deals
+- **Workflow Steps**: Define sequential or parallel approval steps
+- **Action Tracking**: Complete audit trail of approval decisions
+
+## Custom Dashboards
+- **Widget Builder**: Drag-and-drop dashboard customization
+- **Widget Types**: Metric cards, charts, tables, pipeline views, activity feeds, forecasts
+- **Personalization**: Save custom layouts per user
+- **Real-time Updates**: Live data refresh in dashboard widgets
+
+## Advanced Pipeline Analytics
+- **Conversion Rates**: Stage-by-stage conversion analysis
+- **Pipeline Velocity**: Track average time in each pipeline stage
+- **Bottleneck Detection**: Identify pipeline stages requiring attention
+- **Win/Loss Analysis**: Analyze deal outcomes and patterns
+- **Team Performance**: Sales leaderboards and performance metrics
+- **Time-based Filtering**: Analyze data by custom time periods
+
+## Data Management
+- **Excel Import**: Support for .xlsx file imports with preview
+- **Advanced Mapping**: Column-to-field mapping with validation
+- **Bulk Operations**: Import thousands of records efficiently
+- **Export Automation**: Schedule recurring exports via email
+- **Multiple Formats**: Export to CSV and Excel formats
+
+## API & Integrations
+- **REST API**: Comprehensive RESTful API for all CRM operations
+- **API Documentation**: Interactive Swagger/OpenAPI documentation at /api-docs
+- **API Key Management**: Secure key generation with expiration and revocation
+- **Webhook Support**: Real-time event notifications (schema prepared)
+- **Rate Limiting**: Built-in rate limiting for API security
