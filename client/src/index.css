@@ -113,3 +113,17 @@
   background: linear-gradient(135deg, var(--chart-1) 0%, var(--chart-2) 100%);
   border-radius: var(--radius);
 }
+
+@layer utilities {
+  .bg-size-200 {
+    background-size: 200%;
+  }
+  
+  .bg-pos-0 {
+    background-position: 0% 50%;
+  }
+  
+  .bg-pos-100 {
+    background-position: 100% 50%;
+  }
+}
