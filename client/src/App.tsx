@@ -18,6 +18,7 @@ import AIInsights from "@/pages/AIInsights";
 import EmailTemplates from "@/pages/EmailTemplates";
 import Approvals from "@/pages/Approvals";
 import CustomDashboard from "@/pages/CustomDashboard";
+import PipelineAnalytics from "@/pages/PipelineAnalytics";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -50,6 +51,7 @@ function Router() {
           <Route path="/email-templates" component={EmailTemplates} />
           <Route path="/approvals" component={Approvals} />
           <Route path="/custom-dashboard" component={CustomDashboard} />
+          <Route path="/pipeline-analytics" component={PipelineAnalytics} />
         </>
       )}
       <Route component={NotFound} />

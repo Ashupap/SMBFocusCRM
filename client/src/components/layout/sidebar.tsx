@@ -30,6 +30,7 @@ const navigation = [
   { name: "Email Templates", href: "/email-templates", icon: FileText },
   { name: "Approvals", href: "/approvals", icon: CheckSquare },
   { name: "Custom Dashboard", href: "/custom-dashboard", icon: LayoutGrid },
+  { name: "Pipeline Analytics", href: "/pipeline-analytics", icon: BarChart3 },
 ];
 
 const settingsNavigation = [
