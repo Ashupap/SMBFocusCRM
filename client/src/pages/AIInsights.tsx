@@ -219,9 +219,10 @@ export default function AIInsights() {
                     <div className="text-2xl font-bold" data-testid={`revenue-${forecast.id}`}>
                       ${Number(forecast.predictedRevenue).toLocaleString()}
                     </div>
-                    {forecast.factors && typeof forecast.factors === 'object' && 'reasoning' in forecast.factors && (
+                    {forecast.factors && typeof forecast.factors === 'object' && 'reasoning' in forecast.factors && 
+                      (forecast.factors as { reasoning?: string }).reasoning && (
                       <p className="text-sm text-muted-foreground mt-2">
-                        {String((forecast.factors as { reasoning?: string }).reasoning || '')}
+                        {(forecast.factors as { reasoning: string }).reasoning}
                       </p>
                     )}
                   </div>

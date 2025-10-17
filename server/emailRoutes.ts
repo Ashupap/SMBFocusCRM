@@ -10,12 +10,14 @@ const insertEmailTemplateSchema = createInsertSchema(emailTemplates).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+  ownerId: true,
 });
 
 const insertEmailSequenceSchema = createInsertSchema(emailSequences).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+  ownerId: true,
 });
 
 const insertSequenceStepSchema = createInsertSchema(emailSequenceSteps).omit({
