@@ -7,6 +7,8 @@ import { insertContactSchema, insertCompanySchema, insertDealSchema, insertActiv
 import { z } from "zod";
 import { sendEmailCampaign } from "./emailService";
 import authRoutes from "./authRoutes";
+import aiRoutes from "./aiRoutes";
+import emailRoutes from "./emailRoutes";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
@@ -14,6 +16,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // JWT Authentication routes
   app.use('/api/auth', authRoutes);
+
+  // AI-powered features routes
+  app.use(aiRoutes);
+
+  // Email template and sequence routes
+  app.use(emailRoutes);
 
   // Legacy Replit OIDC route - keeping for backwards compatibility during migration
   app.get('/api/auth/replit-user', isAuthenticated, async (req: any, res) => {

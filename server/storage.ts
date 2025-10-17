@@ -10,6 +10,23 @@ import {
   emailVerificationTokens,
   passwordResetTokens,
   auditLogs,
+  emailTemplates,
+  emailSequences,
+  emailSequenceSteps,
+  sequenceEnrollments,
+  leadScores,
+  salesForecasts,
+  recommendations,
+  approvalWorkflows,
+  workflowSteps,
+  approvalRequests,
+  approvalActions,
+  dashboardWidgets,
+  apiKeys,
+  calendarEvents,
+  syncedEmails,
+  pipelineMetrics,
+  salesPerformance,
   type User,
   type UpsertUser,
   type Company,
@@ -34,6 +51,32 @@ import {
   type InsertAuditLog,
   type DashboardMetrics,
   type PipelineStage,
+  type EmailTemplate,
+  type InsertEmailTemplate,
+  type EmailSequence,
+  type InsertEmailSequence,
+  type EmailSequenceStep,
+  type InsertEmailSequenceStep,
+  type SequenceEnrollment,
+  type InsertSequenceEnrollment,
+  type LeadScore,
+  type InsertLeadScore,
+  type SalesForecast,
+  type InsertSalesForecast,
+  type Recommendation,
+  type InsertRecommendation,
+  type DashboardWidget,
+  type InsertDashboardWidget,
+  type ApiKey,
+  type InsertApiKey,
+  type CalendarEvent,
+  type InsertCalendarEvent,
+  type SyncedEmail,
+  type InsertSyncedEmail,
+  type PipelineMetric,
+  type InsertPipelineMetric,
+  type SalesPerformance,
+  type InsertSalesPerformance,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, asc, count, sum, and, gte, lt, sql, isNull } from "drizzle-orm";
@@ -114,6 +157,74 @@ export interface IStorage {
   // Audit log operations
   createAuditLog(log: InsertAuditLog): Promise<AuditLog>;
   getAuditLogs(userId: string, limit?: number): Promise<AuditLog[]>;
+
+  // Email Template operations
+  getEmailTemplates(ownerId: string): Promise<EmailTemplate[]>;
+  getEmailTemplate(id: string): Promise<EmailTemplate | undefined>;
+  createEmailTemplate(template: InsertEmailTemplate): Promise<EmailTemplate>;
+  updateEmailTemplate(id: string, template: Partial<InsertEmailTemplate>): Promise<EmailTemplate>;
+  deleteEmailTemplate(id: string): Promise<void>;
+
+  // Email Sequence operations
+  getEmailSequences(ownerId: string): Promise<EmailSequence[]>;
+  getEmailSequence(id: string): Promise<EmailSequence | undefined>;
+  createEmailSequence(sequence: InsertEmailSequence): Promise<EmailSequence>;
+  updateEmailSequence(id: string, sequence: Partial<InsertEmailSequence>): Promise<EmailSequence>;
+  deleteEmailSequence(id: string): Promise<void>;
+  getSequenceSteps(sequenceId: string): Promise<EmailSequenceStep[]>;
+  createSequenceStep(step: InsertEmailSequenceStep): Promise<EmailSequenceStep>;
+  updateSequenceStep(id: string, step: Partial<InsertEmailSequenceStep>): Promise<EmailSequenceStep>;
+  deleteSequenceStep(id: string): Promise<void>;
+
+  // Sequence Enrollment operations
+  getSequenceEnrollments(sequenceId: string): Promise<(SequenceEnrollment & { contact?: Contact })[]>;
+  createSequenceEnrollment(enrollment: InsertSequenceEnrollment): Promise<SequenceEnrollment>;
+  updateSequenceEnrollment(id: string, enrollment: Partial<InsertSequenceEnrollment>): Promise<SequenceEnrollment>;
+
+  // Lead Score operations
+  getLeadScores(ownerId: string): Promise<(LeadScore & { contact?: Contact })[]>;
+  getLeadScore(contactId: string): Promise<LeadScore | undefined>;
+  createLeadScore(score: InsertLeadScore): Promise<LeadScore>;
+  updateLeadScore(contactId: string, score: Partial<InsertLeadScore>): Promise<LeadScore>;
+
+  // Sales Forecast operations
+  getSalesForecasts(userId: string): Promise<SalesForecast[]>;
+  createSalesForecast(forecast: InsertSalesForecast): Promise<SalesForecast>;
+  updateForecastActual(id: string, actualRevenue: number): Promise<SalesForecast>;
+
+  // Recommendation operations
+  getRecommendations(userId: string): Promise<(Recommendation & { contact?: Contact; deal?: Deal })[]>;
+  createRecommendation(recommendation: InsertRecommendation): Promise<Recommendation>;
+  updateRecommendation(id: string, recommendation: Partial<InsertRecommendation>): Promise<Recommendation>;
+  deleteRecommendation(id: string): Promise<void>;
+
+  // Dashboard Widget operations
+  getDashboardWidgets(userId: string): Promise<DashboardWidget[]>;
+  createDashboardWidget(widget: InsertDashboardWidget): Promise<DashboardWidget>;
+  updateDashboardWidget(id: string, widget: Partial<InsertDashboardWidget>): Promise<DashboardWidget>;
+  deleteDashboardWidget(id: string): Promise<void>;
+
+  // API Key operations
+  getApiKeys(userId: string): Promise<ApiKey[]>;
+  createApiKey(key: InsertApiKey): Promise<ApiKey>;
+  updateApiKeyLastUsed(keyPrefix: string): Promise<void>;
+  revokeApiKey(id: string): Promise<void>;
+
+  // Calendar Event operations
+  getCalendarEvents(userId: string): Promise<(CalendarEvent & { contact?: Contact; deal?: Deal })[]>;
+  createCalendarEvent(event: InsertCalendarEvent): Promise<CalendarEvent>;
+  updateCalendarEvent(id: string, event: Partial<InsertCalendarEvent>): Promise<CalendarEvent>;
+  deleteCalendarEvent(id: string): Promise<void>;
+
+  // Synced Email operations
+  getSyncedEmails(userId: string): Promise<(SyncedEmail & { contact?: Contact; deal?: Deal })[]>;
+  createSyncedEmail(email: InsertSyncedEmail): Promise<SyncedEmail>;
+
+  // Analytics operations
+  getPipelineMetrics(period: string): Promise<PipelineMetric[]>;
+  createPipelineMetric(metric: InsertPipelineMetric): Promise<PipelineMetric>;
+  getSalesPerformance(userId: string, period?: string): Promise<SalesPerformance[]>;
+  createSalesPerformance(performance: InsertSalesPerformance): Promise<SalesPerformance>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -737,6 +848,421 @@ export class DatabaseStorage implements IStorage {
       .where(eq(auditLogs.userId, userId))
       .orderBy(desc(auditLogs.createdAt))
       .limit(limit);
+  }
+
+  // Email Template operations
+  async getEmailTemplates(ownerId: string): Promise<EmailTemplate[]> {
+    return await db
+      .select()
+      .from(emailTemplates)
+      .where(eq(emailTemplates.ownerId, ownerId))
+      .orderBy(desc(emailTemplates.createdAt));
+  }
+
+  async getEmailTemplate(id: string): Promise<EmailTemplate | undefined> {
+    const [template] = await db
+      .select()
+      .from(emailTemplates)
+      .where(eq(emailTemplates.id, id));
+    return template;
+  }
+
+  async createEmailTemplate(template: InsertEmailTemplate): Promise<EmailTemplate> {
+    const [newTemplate] = await db
+      .insert(emailTemplates)
+      .values(template)
+      .returning();
+    return newTemplate;
+  }
+
+  async updateEmailTemplate(id: string, template: Partial<InsertEmailTemplate>): Promise<EmailTemplate> {
+    const [updated] = await db
+      .update(emailTemplates)
+      .set({ ...template, updatedAt: new Date() })
+      .where(eq(emailTemplates.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteEmailTemplate(id: string): Promise<void> {
+    await db.delete(emailTemplates).where(eq(emailTemplates.id, id));
+  }
+
+  // Email Sequence operations
+  async getEmailSequences(ownerId: string): Promise<EmailSequence[]> {
+    return await db
+      .select()
+      .from(emailSequences)
+      .where(eq(emailSequences.ownerId, ownerId))
+      .orderBy(desc(emailSequences.createdAt));
+  }
+
+  async getEmailSequence(id: string): Promise<EmailSequence | undefined> {
+    const [sequence] = await db
+      .select()
+      .from(emailSequences)
+      .where(eq(emailSequences.id, id));
+    return sequence;
+  }
+
+  async createEmailSequence(sequence: InsertEmailSequence): Promise<EmailSequence> {
+    const [newSequence] = await db
+      .insert(emailSequences)
+      .values(sequence)
+      .returning();
+    return newSequence;
+  }
+
+  async updateEmailSequence(id: string, sequence: Partial<InsertEmailSequence>): Promise<EmailSequence> {
+    const [updated] = await db
+      .update(emailSequences)
+      .set({ ...sequence, updatedAt: new Date() })
+      .where(eq(emailSequences.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteEmailSequence(id: string): Promise<void> {
+    await db.delete(emailSequences).where(eq(emailSequences.id, id));
+  }
+
+  async getSequenceSteps(sequenceId: string): Promise<EmailSequenceStep[]> {
+    return await db
+      .select()
+      .from(emailSequenceSteps)
+      .where(eq(emailSequenceSteps.sequenceId, sequenceId))
+      .orderBy(asc(emailSequenceSteps.stepOrder));
+  }
+
+  async createSequenceStep(step: InsertEmailSequenceStep): Promise<EmailSequenceStep> {
+    const [newStep] = await db
+      .insert(emailSequenceSteps)
+      .values(step)
+      .returning();
+    return newStep;
+  }
+
+  async updateSequenceStep(id: string, step: Partial<InsertEmailSequenceStep>): Promise<EmailSequenceStep> {
+    const [updated] = await db
+      .update(emailSequenceSteps)
+      .set(step)
+      .where(eq(emailSequenceSteps.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteSequenceStep(id: string): Promise<void> {
+    await db.delete(emailSequenceSteps).where(eq(emailSequenceSteps.id, id));
+  }
+
+  // Sequence Enrollment operations
+  async getSequenceEnrollments(sequenceId: string): Promise<(SequenceEnrollment & { contact?: Contact })[]> {
+    return await db
+      .select()
+      .from(sequenceEnrollments)
+      .leftJoin(contacts, eq(sequenceEnrollments.contactId, contacts.id))
+      .where(eq(sequenceEnrollments.sequenceId, sequenceId))
+      .then(rows =>
+        rows.map(row => ({
+          ...row.sequence_enrollments,
+          contact: row.contacts || undefined,
+        }))
+      );
+  }
+
+  async createSequenceEnrollment(enrollment: InsertSequenceEnrollment): Promise<SequenceEnrollment> {
+    const [newEnrollment] = await db
+      .insert(sequenceEnrollments)
+      .values(enrollment)
+      .returning();
+    return newEnrollment;
+  }
+
+  async updateSequenceEnrollment(id: string, enrollment: Partial<InsertSequenceEnrollment>): Promise<SequenceEnrollment> {
+    const [updated] = await db
+      .update(sequenceEnrollments)
+      .set(enrollment)
+      .where(eq(sequenceEnrollments.id, id))
+      .returning();
+    return updated;
+  }
+
+  // Lead Score operations
+  async getLeadScores(ownerId: string): Promise<(LeadScore & { contact?: Contact })[]> {
+    return await db
+      .select()
+      .from(leadScores)
+      .leftJoin(contacts, eq(leadScores.contactId, contacts.id))
+      .where(eq(contacts.ownerId, ownerId))
+      .orderBy(desc(leadScores.score))
+      .then(rows =>
+        rows.map(row => ({
+          ...row.lead_scores,
+          contact: row.contacts || undefined,
+        }))
+      );
+  }
+
+  async getLeadScore(contactId: string): Promise<LeadScore | undefined> {
+    const [score] = await db
+      .select()
+      .from(leadScores)
+      .where(eq(leadScores.contactId, contactId))
+      .orderBy(desc(leadScores.lastCalculatedAt))
+      .limit(1);
+    return score;
+  }
+
+  async createLeadScore(score: InsertLeadScore): Promise<LeadScore> {
+    const [newScore] = await db
+      .insert(leadScores)
+      .values(score)
+      .returning();
+    return newScore;
+  }
+
+  async updateLeadScore(contactId: string, score: Partial<InsertLeadScore>): Promise<LeadScore> {
+    const [updated] = await db
+      .update(leadScores)
+      .set({ ...score, lastCalculatedAt: new Date() })
+      .where(eq(leadScores.contactId, contactId))
+      .returning();
+    return updated;
+  }
+
+  // Sales Forecast operations
+  async getSalesForecasts(userId: string): Promise<SalesForecast[]> {
+    return await db
+      .select()
+      .from(salesForecasts)
+      .where(eq(salesForecasts.userId, userId))
+      .orderBy(desc(salesForecasts.createdAt));
+  }
+
+  async createSalesForecast(forecast: InsertSalesForecast): Promise<SalesForecast> {
+    const [newForecast] = await db
+      .insert(salesForecasts)
+      .values(forecast)
+      .returning();
+    return newForecast;
+  }
+
+  async updateForecastActual(id: string, actualRevenue: number): Promise<SalesForecast> {
+    const [updated] = await db
+      .update(salesForecasts)
+      .set({ actualRevenue: actualRevenue.toString() })
+      .where(eq(salesForecasts.id, id))
+      .returning();
+    return updated;
+  }
+
+  // Recommendation operations
+  async getRecommendations(userId: string): Promise<(Recommendation & { contact?: Contact; deal?: Deal })[]> {
+    return await db
+      .select()
+      .from(recommendations)
+      .leftJoin(contacts, eq(recommendations.contactId, contacts.id))
+      .leftJoin(deals, eq(recommendations.dealId, deals.id))
+      .where(eq(recommendations.userId, userId))
+      .orderBy(asc(recommendations.priority), desc(recommendations.createdAt))
+      .then(rows =>
+        rows.map(row => ({
+          ...row.recommendations,
+          contact: row.contacts || undefined,
+          deal: row.deals || undefined,
+        }))
+      );
+  }
+
+  async createRecommendation(recommendation: InsertRecommendation): Promise<Recommendation> {
+    const [newRecommendation] = await db
+      .insert(recommendations)
+      .values(recommendation)
+      .returning();
+    return newRecommendation;
+  }
+
+  async updateRecommendation(id: string, recommendation: Partial<InsertRecommendation>): Promise<Recommendation> {
+    const [updated] = await db
+      .update(recommendations)
+      .set(recommendation)
+      .where(eq(recommendations.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteRecommendation(id: string): Promise<void> {
+    await db.delete(recommendations).where(eq(recommendations.id, id));
+  }
+
+  // Dashboard Widget operations
+  async getDashboardWidgets(userId: string): Promise<DashboardWidget[]> {
+    return await db
+      .select()
+      .from(dashboardWidgets)
+      .where(eq(dashboardWidgets.userId, userId))
+      .orderBy(asc(dashboardWidgets.createdAt));
+  }
+
+  async createDashboardWidget(widget: InsertDashboardWidget): Promise<DashboardWidget> {
+    const [newWidget] = await db
+      .insert(dashboardWidgets)
+      .values(widget)
+      .returning();
+    return newWidget;
+  }
+
+  async updateDashboardWidget(id: string, widget: Partial<InsertDashboardWidget>): Promise<DashboardWidget> {
+    const [updated] = await db
+      .update(dashboardWidgets)
+      .set({ ...widget, updatedAt: new Date() })
+      .where(eq(dashboardWidgets.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteDashboardWidget(id: string): Promise<void> {
+    await db.delete(dashboardWidgets).where(eq(dashboardWidgets.id, id));
+  }
+
+  // API Key operations
+  async getApiKeys(userId: string): Promise<ApiKey[]> {
+    return await db
+      .select()
+      .from(apiKeys)
+      .where(eq(apiKeys.userId, userId))
+      .orderBy(desc(apiKeys.createdAt));
+  }
+
+  async createApiKey(key: InsertApiKey): Promise<ApiKey> {
+    const [newKey] = await db
+      .insert(apiKeys)
+      .values(key)
+      .returning();
+    return newKey;
+  }
+
+  async updateApiKeyLastUsed(keyPrefix: string): Promise<void> {
+    await db
+      .update(apiKeys)
+      .set({ lastUsedAt: new Date() })
+      .where(eq(apiKeys.keyPrefix, keyPrefix));
+  }
+
+  async revokeApiKey(id: string): Promise<void> {
+    await db
+      .update(apiKeys)
+      .set({ isActive: false })
+      .where(eq(apiKeys.id, id));
+  }
+
+  // Calendar Event operations
+  async getCalendarEvents(userId: string): Promise<(CalendarEvent & { contact?: Contact; deal?: Deal })[]> {
+    return await db
+      .select()
+      .from(calendarEvents)
+      .leftJoin(contacts, eq(calendarEvents.contactId, contacts.id))
+      .leftJoin(deals, eq(calendarEvents.dealId, deals.id))
+      .where(eq(calendarEvents.userId, userId))
+      .orderBy(desc(calendarEvents.startTime))
+      .then(rows =>
+        rows.map(row => ({
+          ...row.calendar_events,
+          contact: row.contacts || undefined,
+          deal: row.deals || undefined,
+        }))
+      );
+  }
+
+  async createCalendarEvent(event: InsertCalendarEvent): Promise<CalendarEvent> {
+    const [newEvent] = await db
+      .insert(calendarEvents)
+      .values(event)
+      .returning();
+    return newEvent;
+  }
+
+  async updateCalendarEvent(id: string, event: Partial<InsertCalendarEvent>): Promise<CalendarEvent> {
+    const [updated] = await db
+      .update(calendarEvents)
+      .set({ ...event, updatedAt: new Date() })
+      .where(eq(calendarEvents.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteCalendarEvent(id: string): Promise<void> {
+    await db.delete(calendarEvents).where(eq(calendarEvents.id, id));
+  }
+
+  // Synced Email operations
+  async getSyncedEmails(userId: string): Promise<(SyncedEmail & { contact?: Contact; deal?: Deal })[]> {
+    return await db
+      .select()
+      .from(syncedEmails)
+      .leftJoin(contacts, eq(syncedEmails.contactId, contacts.id))
+      .leftJoin(deals, eq(syncedEmails.dealId, deals.id))
+      .where(eq(syncedEmails.userId, userId))
+      .orderBy(desc(syncedEmails.sentAt))
+      .then(rows =>
+        rows.map(row => ({
+          ...row.synced_emails,
+          contact: row.contacts || undefined,
+          deal: row.deals || undefined,
+        }))
+      );
+  }
+
+  async createSyncedEmail(email: InsertSyncedEmail): Promise<SyncedEmail> {
+    const [newEmail] = await db
+      .insert(syncedEmails)
+      .values(email)
+      .returning();
+    return newEmail;
+  }
+
+  // Analytics operations
+  async getPipelineMetrics(period: string): Promise<PipelineMetric[]> {
+    return await db
+      .select()
+      .from(pipelineMetrics)
+      .where(eq(pipelineMetrics.date, sql`${period}`))
+      .orderBy(asc(pipelineMetrics.stage));
+  }
+
+  async createPipelineMetric(metric: InsertPipelineMetric): Promise<PipelineMetric> {
+    const [newMetric] = await db
+      .insert(pipelineMetrics)
+      .values(metric)
+      .returning();
+    return newMetric;
+  }
+
+  async getSalesPerformance(userId: string, period?: string): Promise<SalesPerformance[]> {
+    if (period) {
+      return await db
+        .select()
+        .from(salesPerformance)
+        .where(and(
+          eq(salesPerformance.userId, userId),
+          eq(salesPerformance.period, period)
+        ))
+        .orderBy(desc(salesPerformance.createdAt));
+    }
+
+    return await db
+      .select()
+      .from(salesPerformance)
+      .where(eq(salesPerformance.userId, userId))
+      .orderBy(desc(salesPerformance.createdAt));
+  }
+
+  async createSalesPerformance(performance: InsertSalesPerformance): Promise<SalesPerformance> {
+    const [newPerformance] = await db
+      .insert(salesPerformance)
+      .values(performance)
+      .returning();
+    return newPerformance;
   }
 }
 
