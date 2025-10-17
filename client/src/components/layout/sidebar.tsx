@@ -11,7 +11,9 @@ import {
   FileBarChart, 
   UserCheck, 
   Settings,
-  MoreVertical
+  MoreVertical,
+  Brain,
+  FileText
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -22,6 +24,8 @@ const navigation = [
   { name: "Activities", href: "/activities", icon: Calendar },
   { name: "Email Campaigns", href: "/campaigns", icon: Mail },
   { name: "Reports", href: "/reports", icon: FileBarChart },
+  { name: "AI Insights", href: "/ai-insights", icon: Brain },
+  { name: "Email Templates", href: "/email-templates", icon: FileText },
 ];
 
 const settingsNavigation = [
