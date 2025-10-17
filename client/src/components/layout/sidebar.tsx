@@ -37,6 +37,7 @@ const navigation = [
 
 const settingsNavigation = [
   { name: "Team", href: "/team", icon: UserCheck },
+  { name: "API Keys", href: "/api-keys", icon: Settings },
   { name: "Settings", href: "/settings", icon: Settings },
 ];
 

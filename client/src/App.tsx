@@ -20,6 +20,7 @@ import Approvals from "@/pages/Approvals";
 import CustomDashboard from "@/pages/CustomDashboard";
 import PipelineAnalytics from "@/pages/PipelineAnalytics";
 import ImportExport from "@/pages/ImportExport";
+import ApiKeys from "@/pages/ApiKeys";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -54,6 +55,7 @@ function Router() {
           <Route path="/custom-dashboard" component={CustomDashboard} />
           <Route path="/pipeline-analytics" component={PipelineAnalytics} />
           <Route path="/import-export" component={ImportExport} />
+          <Route path="/api-keys" component={ApiKeys} />
         </>
       )}
       <Route component={NotFound} />
