@@ -1,0 +1,229 @@
+import { Router } from 'express';
+import { storage } from './storage';
+import { authenticateToken } from './authMiddleware';
+import { createInsertSchema } from 'drizzle-zod';
+import { approvalWorkflows, workflowSteps, approvalRequests, approvalActions } from '@shared/schema';
+
+const router = Router();
+
+const insertApprovalWorkflowSchema = createInsertSchema(approvalWorkflows).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+const insertWorkflowStepSchema = createInsertSchema(workflowSteps).omit({
+  id: true,
+  createdAt: true,
+});
+
+const insertApprovalRequestSchema = createInsertSchema(approvalRequests).omit({
+  id: true,
+  createdAt: true,
+  completedAt: true,
+  requesterId: true,
+});
+
+const insertApprovalActionSchema = createInsertSchema(approvalActions).omit({
+  id: true,
+  createdAt: true,
+  approverId: true,
+});
+
+// Approval Workflow Routes
+router.get('/api/approval-workflows', authenticateToken, async (req, res) => {
+  try {
+    const workflows = await storage.getApprovalWorkflows();
+    res.json(workflows);
+  } catch (error: any) {
+    console.error('Error fetching workflows:', error);
+    res.status(500).json({ error: error.message || 'Failed to fetch workflows' });
+  }
+});
+
+router.get('/api/approval-workflows/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const workflow = await storage.getApprovalWorkflow(id);
+    
+    if (!workflow) {
+      return res.status(404).json({ error: 'Workflow not found' });
+    }
+
+    const steps = await storage.getWorkflowSteps(id);
+    res.json({ ...workflow, steps });
+  } catch (error: any) {
+    console.error('Error fetching workflow:', error);
+    res.status(500).json({ error: error.message || 'Failed to fetch workflow' });
+  }
+});
+
+router.post('/api/approval-workflows', authenticateToken, async (req, res) => {
+  try {
+    const validated = insertApprovalWorkflowSchema.parse(req.body);
+    const workflow = await storage.createApprovalWorkflow(validated);
+    res.json(workflow);
+  } catch (error: any) {
+    console.error('Error creating workflow:', error);
+    res.status(500).json({ error: error.message || 'Failed to create workflow' });
+  }
+});
+
+router.patch('/api/approval-workflows/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const workflow = await storage.updateApprovalWorkflow(id, req.body);
+    res.json(workflow);
+  } catch (error: any) {
+    console.error('Error updating workflow:', error);
+    res.status(500).json({ error: error.message || 'Failed to update workflow' });
+  }
+});
+
+router.delete('/api/approval-workflows/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    await storage.deleteApprovalWorkflow(id);
+    res.json({ success: true });
+  } catch (error: any) {
+    console.error('Error deleting workflow:', error);
+    res.status(500).json({ error: error.message || 'Failed to delete workflow' });
+  }
+});
+
+// Workflow Step Routes
+router.post('/api/workflow-steps', authenticateToken, async (req, res) => {
+  try {
+    const validated = insertWorkflowStepSchema.parse(req.body);
+    const step = await storage.createWorkflowStep(validated);
+    res.json(step);
+  } catch (error: any) {
+    console.error('Error creating step:', error);
+    res.status(500).json({ error: error.message || 'Failed to create step' });
+  }
+});
+
+router.delete('/api/workflow-steps/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    await storage.deleteWorkflowStep(id);
+    res.json({ success: true });
+  } catch (error: any) {
+    console.error('Error deleting step:', error);
+    res.status(500).json({ error: error.message || 'Failed to delete step' });
+  }
+});
+
+// Approval Request Routes
+router.get('/api/approval-requests', authenticateToken, async (req, res) => {
+  try {
+    const userId = (req.user as any).id;
+    const requests = await storage.getApprovalRequests(userId);
+    res.json(requests);
+  } catch (error: any) {
+    console.error('Error fetching requests:', error);
+    res.status(500).json({ error: error.message || 'Failed to fetch requests' });
+  }
+});
+
+router.get('/api/approval-requests/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const request = await storage.getApprovalRequest(id);
+    
+    if (!request) {
+      return res.status(404).json({ error: 'Request not found' });
+    }
+
+    const actions = await storage.getApprovalActions(id);
+    res.json({ ...request, actions });
+  } catch (error: any) {
+    console.error('Error fetching request:', error);
+    res.status(500).json({ error: error.message || 'Failed to fetch request' });
+  }
+});
+
+router.post('/api/approval-requests', authenticateToken, async (req, res) => {
+  try {
+    const userId = (req.user as any).id;
+    const validated = insertApprovalRequestSchema.parse(req.body);
+    
+    const request = await storage.createApprovalRequest({
+      ...validated,
+      requesterId: userId,
+    });
+    
+    res.json(request);
+  } catch (error: any) {
+    console.error('Error creating request:', error);
+    res.status(500).json({ error: error.message || 'Failed to create request' });
+  }
+});
+
+router.patch('/api/approval-requests/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const request = await storage.updateApprovalRequest(id, req.body);
+    res.json(request);
+  } catch (error: any) {
+    console.error('Error updating request:', error);
+    res.status(500).json({ error: error.message || 'Failed to update request' });
+  }
+});
+
+// Approval Action Routes
+router.post('/api/approval-actions', authenticateToken, async (req, res) => {
+  try {
+    const userId = (req.user as any).id;
+    const validated = insertApprovalActionSchema.parse(req.body);
+    
+    const action = await storage.createApprovalAction({
+      ...validated,
+      approverId: userId,
+    });
+    
+    // Update the request status based on the action
+    const { requestId } = validated;
+    const request = await storage.getApprovalRequest(requestId);
+    
+    if (request) {
+      // If action is 'rejected', mark request as rejected
+      if (validated.action === 'rejected') {
+        await storage.updateApprovalRequest(requestId, {
+          status: 'rejected',
+          completedAt: new Date(),
+        });
+      } else if (validated.action === 'approved') {
+        // Check if all steps are approved
+        const steps = await storage.getWorkflowSteps(request.workflowId);
+        const actions = await storage.getApprovalActions(requestId);
+        
+        // Simple logic: if this is the last step, mark as approved
+        const currentStepOrder = steps.find(s => s.id === validated.stepId)?.stepOrder || 0;
+        const maxStepOrder = Math.max(...steps.map(s => s.stepOrder));
+        
+        if (currentStepOrder >= maxStepOrder) {
+          await storage.updateApprovalRequest(requestId, {
+            status: 'approved',
+            completedAt: new Date(),
+          });
+        } else {
+          // Move to next step
+          const nextStep = steps.find(s => s.stepOrder === currentStepOrder + 1);
+          if (nextStep) {
+            await storage.updateApprovalRequest(requestId, {
+              currentStepId: nextStep.id,
+            });
+          }
+        }
+      }
+    }
+    
+    res.json(action);
+  } catch (error: any) {
+    console.error('Error creating action:', error);
+    res.status(500).json({ error: error.message || 'Failed to create action' });
+  }
+});
+
+export default router;

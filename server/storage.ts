@@ -84,6 +84,7 @@ import { eq, desc, asc, count, sum, and, gte, lt, sql, isNull } from "drizzle-or
 export interface IStorage {
   // User operations (required for Replit Auth)
   getUser(id: string): Promise<User | undefined>;
+  getAllUsers(): Promise<User[]>;
   upsertUser(user: UpsertUser): Promise<User>;
 
   // Company operations
@@ -225,6 +226,24 @@ export interface IStorage {
   createPipelineMetric(metric: InsertPipelineMetric): Promise<PipelineMetric>;
   getSalesPerformance(userId: string, period?: string): Promise<SalesPerformance[]>;
   createSalesPerformance(performance: InsertSalesPerformance): Promise<SalesPerformance>;
+
+  // Approval Workflow operations
+  getApprovalWorkflows(): Promise<ApprovalWorkflow[]>;
+  getApprovalWorkflow(id: string): Promise<ApprovalWorkflow | undefined>;
+  createApprovalWorkflow(workflow: InsertApprovalWorkflow): Promise<ApprovalWorkflow>;
+  updateApprovalWorkflow(id: string, workflow: Partial<InsertApprovalWorkflow>): Promise<ApprovalWorkflow>;
+  deleteApprovalWorkflow(id: string): Promise<void>;
+  getWorkflowSteps(workflowId: string): Promise<(WorkflowStep & { approver?: User })[]>;
+  createWorkflowStep(step: InsertWorkflowStep): Promise<WorkflowStep>;
+  deleteWorkflowStep(id: string): Promise<void>;
+  
+  // Approval Request operations
+  getApprovalRequests(userId: string): Promise<(ApprovalRequest & { workflow?: ApprovalWorkflow; requester?: User })[]>;
+  getApprovalRequest(id: string): Promise<(ApprovalRequest & { workflow?: ApprovalWorkflow })  | undefined>;
+  createApprovalRequest(request: InsertApprovalRequest): Promise<ApprovalRequest>;
+  updateApprovalRequest(id: string, request: Partial<InsertApprovalRequest>): Promise<ApprovalRequest>;
+  getApprovalActions(requestId: string): Promise<(ApprovalAction & { approver?: User })[]>;
+  createApprovalAction(action: InsertApprovalAction): Promise<ApprovalAction>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -232,6 +251,10 @@ export class DatabaseStorage implements IStorage {
   async getUser(id: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
     return user;
+  }
+
+  async getAllUsers(): Promise<User[]> {
+    return await db.select().from(users).orderBy(users.firstName, users.lastName);
   }
 
   async upsertUser(userData: UpsertUser): Promise<User> {
@@ -1263,6 +1286,156 @@ export class DatabaseStorage implements IStorage {
       .values(performance)
       .returning();
     return newPerformance;
+  }
+
+  // Approval Workflow operations
+  async getApprovalWorkflows(): Promise<ApprovalWorkflow[]> {
+    return await db
+      .select()
+      .from(approvalWorkflows)
+      .orderBy(desc(approvalWorkflows.createdAt));
+  }
+
+  async getApprovalWorkflow(id: string): Promise<ApprovalWorkflow | undefined> {
+    const [workflow] = await db
+      .select()
+      .from(approvalWorkflows)
+      .where(eq(approvalWorkflows.id, id));
+    return workflow;
+  }
+
+  async createApprovalWorkflow(workflow: InsertApprovalWorkflow): Promise<ApprovalWorkflow> {
+    const [newWorkflow] = await db
+      .insert(approvalWorkflows)
+      .values(workflow)
+      .returning();
+    return newWorkflow;
+  }
+
+  async updateApprovalWorkflow(id: string, workflow: Partial<InsertApprovalWorkflow>): Promise<ApprovalWorkflow> {
+    const [updated] = await db
+      .update(approvalWorkflows)
+      .set({ ...workflow, updatedAt: new Date() })
+      .where(eq(approvalWorkflows.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteApprovalWorkflow(id: string): Promise<void> {
+    await db.delete(approvalWorkflows).where(eq(approvalWorkflows.id, id));
+  }
+
+  async getWorkflowSteps(workflowId: string): Promise<(WorkflowStep & { approver?: User })[]> {
+    return await db
+      .select({
+        workflow_steps: workflowSteps,
+        users,
+      })
+      .from(workflowSteps)
+      .leftJoin(users, eq(workflowSteps.approverId, users.id))
+      .where(eq(workflowSteps.workflowId, workflowId))
+      .orderBy(asc(workflowSteps.stepOrder))
+      .then(rows =>
+        rows.map(row => ({
+          ...row.workflow_steps,
+          approver: row.users || undefined,
+        }))
+      );
+  }
+
+  async createWorkflowStep(step: InsertWorkflowStep): Promise<WorkflowStep> {
+    const [newStep] = await db
+      .insert(workflowSteps)
+      .values(step)
+      .returning();
+    return newStep;
+  }
+
+  async deleteWorkflowStep(id: string): Promise<void> {
+    await db.delete(workflowSteps).where(eq(workflowSteps.id, id));
+  }
+
+  // Approval Request operations
+  async getApprovalRequests(userId: string): Promise<(ApprovalRequest & { workflow?: ApprovalWorkflow; requester?: User })[]> {
+    return await db
+      .select({
+        approval_requests: approvalRequests,
+        approval_workflows: approvalWorkflows,
+        users,
+      })
+      .from(approvalRequests)
+      .leftJoin(approvalWorkflows, eq(approvalRequests.workflowId, approvalWorkflows.id))
+      .leftJoin(users, eq(approvalRequests.requesterId, users.id))
+      .where(eq(approvalRequests.requesterId, userId))
+      .orderBy(desc(approvalRequests.createdAt))
+      .then(rows =>
+        rows.map(row => ({
+          ...row.approval_requests,
+          workflow: row.approval_workflows || undefined,
+          requester: row.users || undefined,
+        }))
+      );
+  }
+
+  async getApprovalRequest(id: string): Promise<(ApprovalRequest & { workflow?: ApprovalWorkflow }) | undefined> {
+    const [result] = await db
+      .select({
+        approval_requests: approvalRequests,
+        approval_workflows: approvalWorkflows,
+      })
+      .from(approvalRequests)
+      .leftJoin(approvalWorkflows, eq(approvalRequests.workflowId, approvalWorkflows.id))
+      .where(eq(approvalRequests.id, id));
+    
+    if (!result) return undefined;
+    
+    return {
+      ...result.approval_requests,
+      workflow: result.approval_workflows || undefined,
+    };
+  }
+
+  async createApprovalRequest(request: InsertApprovalRequest): Promise<ApprovalRequest> {
+    const [newRequest] = await db
+      .insert(approvalRequests)
+      .values(request)
+      .returning();
+    return newRequest;
+  }
+
+  async updateApprovalRequest(id: string, request: Partial<InsertApprovalRequest>): Promise<ApprovalRequest> {
+    const [updated] = await db
+      .update(approvalRequests)
+      .set(request)
+      .where(eq(approvalRequests.id, id))
+      .returning();
+    return updated;
+  }
+
+  async getApprovalActions(requestId: string): Promise<(ApprovalAction & { approver?: User })[]> {
+    return await db
+      .select({
+        approval_actions: approvalActions,
+        users,
+      })
+      .from(approvalActions)
+      .leftJoin(users, eq(approvalActions.approverId, users.id))
+      .where(eq(approvalActions.requestId, requestId))
+      .orderBy(asc(approvalActions.createdAt))
+      .then(rows =>
+        rows.map(row => ({
+          ...row.approval_actions,
+          approver: row.users || undefined,
+        }))
+      );
+  }
+
+  async createApprovalAction(action: InsertApprovalAction): Promise<ApprovalAction> {
+    const [newAction] = await db
+      .insert(approvalActions)
+      .values(action)
+      .returning();
+    return newAction;
   }
 }
 

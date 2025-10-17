@@ -9,6 +9,7 @@ import { sendEmailCampaign } from "./emailService";
 import authRoutes from "./authRoutes";
 import aiRoutes from "./aiRoutes";
 import emailRoutes from "./emailRoutes";
+import approvalRoutes from "./approvalRoutes";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
@@ -23,6 +24,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Email template and sequence routes
   app.use(emailRoutes);
 
+  // Approval workflow routes
+  app.use(approvalRoutes);
+
   // Legacy Replit OIDC route - keeping for backwards compatibility during migration
   app.get('/api/auth/replit-user', isAuthenticated, async (req: any, res) => {
     try {
@@ -32,6 +36,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching user:", error);
       res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
+  // User routes
+  app.get('/api/users', authenticateToken, async (req: any, res) => {
+    try {
+      const users = await storage.getAllUsers();
+      res.json(users);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      res.status(500).json({ message: "Failed to fetch users" });
     }
   });
 

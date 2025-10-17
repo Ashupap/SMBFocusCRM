@@ -16,6 +16,7 @@ import Campaigns from "@/pages/campaigns";
 import Reports from "@/pages/reports";
 import AIInsights from "@/pages/AIInsights";
 import EmailTemplates from "@/pages/EmailTemplates";
+import Approvals from "@/pages/Approvals";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -46,6 +47,7 @@ function Router() {
           <Route path="/reports" component={Reports} />
           <Route path="/ai-insights" component={AIInsights} />
           <Route path="/email-templates" component={EmailTemplates} />
+          <Route path="/approvals" component={Approvals} />
         </>
       )}
       <Route component={NotFound} />
