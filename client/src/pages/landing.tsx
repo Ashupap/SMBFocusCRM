@@ -56,11 +56,11 @@ export default function Landing() {
   };
 
   return (
-    <div className="min-h-screen overflow-hidden bg-gradient-to-br from-background via-background to-primary/5 relative">
+    <div className="min-h-screen overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 relative">
       {/* Animated Background Elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <motion.div
-          className="absolute top-20 left-10 w-72 h-72 bg-primary/10 rounded-full blur-3xl"
+          className="absolute top-20 left-10 w-96 h-96 bg-primary/20 rounded-full blur-3xl"
           animate={{
             x: [0, 100, 0],
             y: [0, 50, 0],
@@ -73,7 +73,7 @@ export default function Landing() {
           }}
         />
         <motion.div
-          className="absolute bottom-20 right-10 w-96 h-96 bg-chart-2/10 rounded-full blur-3xl"
+          className="absolute bottom-20 right-10 w-[500px] h-[500px] bg-blue-500/20 rounded-full blur-3xl"
           animate={{
             x: [0, -100, 0],
             y: [0, -50, 0],
@@ -86,7 +86,7 @@ export default function Landing() {
           }}
         />
         <motion.div
-          className="absolute top-1/2 left-1/2 w-64 h-64 bg-chart-3/10 rounded-full blur-3xl"
+          className="absolute top-1/2 left-1/2 w-80 h-80 bg-purple-500/15 rounded-full blur-3xl"
           animate={{
             x: [-100, 100, -100],
             y: [-50, 50, -50],
@@ -113,17 +113,17 @@ export default function Landing() {
             transition={{ duration: 0.6 }}
           >
             <motion.div 
-              className="w-16 h-16 bg-gradient-to-br from-primary to-chart-2 rounded-2xl flex items-center justify-center shadow-lg"
+              className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-cyan-500 rounded-2xl flex items-center justify-center shadow-2xl shadow-emerald-500/50"
               whileHover={{ scale: 1.1, rotate: 5 }}
               transition={{ type: "spring", stiffness: 400 }}
             >
-              <Users className="w-8 h-8 text-primary-foreground" />
+              <Users className="w-8 h-8 text-white" />
             </motion.div>
             <div>
-              <h1 className="text-5xl font-bold bg-gradient-to-r from-primary via-chart-2 to-chart-3 bg-clip-text text-transparent">
+              <h1 className="text-5xl font-bold bg-gradient-to-r from-emerald-400 via-cyan-400 to-blue-400 bg-clip-text text-transparent">
                 CRM Pro
               </h1>
-              <p className="text-lg text-muted-foreground">Sales & Marketing Platform</p>
+              <p className="text-lg text-slate-400">Sales & Marketing Platform</p>
             </div>
           </motion.div>
 
@@ -133,16 +133,16 @@ export default function Landing() {
             transition={{ duration: 0.8 }}
           >
             <h2 className="text-6xl md:text-7xl font-bold tracking-tight">
-              <span className="bg-gradient-to-r from-foreground via-primary to-foreground bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-white via-emerald-200 to-white bg-clip-text text-transparent">
                 Transform Your
               </span>
               <br />
-              <span className="bg-gradient-to-r from-chart-2 via-chart-3 to-primary bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-400 bg-clip-text text-transparent">
                 Customer Relationships
               </span>
             </h2>
             <motion.p 
-              className="text-xl md:text-2xl text-muted-foreground leading-relaxed max-w-3xl mx-auto"
+              className="text-xl md:text-2xl text-slate-300 leading-relaxed max-w-3xl mx-auto"
               variants={fadeInUp}
             >
               Streamline your sales process with AI-powered automation, advanced analytics, and intelligent workflows designed for modern businesses.
@@ -157,7 +157,7 @@ export default function Landing() {
               <Button 
                 size="lg" 
                 onClick={handleLogin}
-                className="px-10 py-6 text-lg bg-gradient-to-r from-primary to-chart-2 hover:from-primary/90 hover:to-chart-2/90 shadow-lg shadow-primary/25"
+                className="px-10 py-6 text-lg bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 shadow-2xl shadow-emerald-500/50 text-white font-semibold"
                 data-testid="button-login"
               >
                 <Sparkles className="w-5 h-5 mr-2" />
@@ -165,7 +165,7 @@ export default function Landing() {
               </Button>
             </motion.div>
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Button variant="outline" size="lg" className="px-10 py-6 text-lg border-2">
+              <Button variant="outline" size="lg" className="px-10 py-6 text-lg border-2 border-slate-600 text-white hover:bg-slate-800 hover:border-slate-500">
                 <Zap className="w-5 h-5 mr-2" />
                 Watch Demo
               </Button>
@@ -181,14 +181,14 @@ export default function Landing() {
           transition={{ delay: 0.8 }}
         >
           {[
-            { icon: Brain, text: "AI-Powered", color: "from-purple-500 to-pink-500" },
-            { icon: LineChart, text: "Advanced Analytics", color: "from-blue-500 to-cyan-500" },
-            { icon: Zap, text: "Workflow Automation", color: "from-orange-500 to-yellow-500" },
-            { icon: Lock, text: "Enterprise Security", color: "from-green-500 to-emerald-500" }
+            { icon: Brain, text: "AI-Powered", color: "from-purple-500 to-pink-500", shadow: "shadow-purple-500/50" },
+            { icon: LineChart, text: "Advanced Analytics", color: "from-blue-500 to-cyan-500", shadow: "shadow-blue-500/50" },
+            { icon: Zap, text: "Workflow Automation", color: "from-orange-500 to-yellow-500", shadow: "shadow-orange-500/50" },
+            { icon: Lock, text: "Enterprise Security", color: "from-emerald-500 to-green-500", shadow: "shadow-emerald-500/50" }
           ].map((item, index) => (
             <motion.div
               key={index}
-              className={`px-6 py-3 rounded-full bg-gradient-to-r ${item.color} bg-opacity-10 backdrop-blur-sm border border-white/10 flex items-center gap-2`}
+              className={`px-6 py-3 rounded-full bg-gradient-to-r ${item.color} backdrop-blur-sm border border-white/20 flex items-center gap-2 shadow-lg ${item.shadow}`}
               whileHover={{ scale: 1.1, y: -5 }}
               transition={{ type: "spring", stiffness: 400 }}
             >
@@ -255,18 +255,17 @@ export default function Landing() {
                 whileHover={{ y: -10, scale: 1.02 }}
                 transition={{ type: "spring", stiffness: 300 }}
               >
-                <Card className="border-2 border-border/50 hover:border-primary/30 transition-all duration-300 bg-card/50 backdrop-blur-sm h-full overflow-hidden group">
+                <Card className="border-2 border-slate-700/50 hover:border-slate-600 transition-all duration-300 bg-slate-800/80 backdrop-blur-xl h-full overflow-hidden group shadow-xl hover:shadow-2xl">
                   <CardHeader>
                     <motion.div 
-                      className={`w-14 h-14 ${feature.bgColor} rounded-xl flex items-center justify-center mb-4 relative group/icon`}
-                      whileHover={{ rotate: 360 }}
+                      className={`w-16 h-16 bg-gradient-to-br ${feature.color} rounded-2xl flex items-center justify-center mb-6 relative shadow-lg`}
+                      whileHover={{ rotate: 360, scale: 1.1 }}
                       transition={{ duration: 0.6 }}
                     >
-                      <div className={`absolute inset-0 bg-gradient-to-br ${feature.color} opacity-0 group-hover:opacity-20 transition-opacity rounded-xl`} />
-                      <feature.icon className={`w-7 h-7 relative z-10 text-primary group-hover/icon:text-white transition-colors`} />
+                      <feature.icon className={`w-8 h-8 text-white`} />
                     </motion.div>
-                    <CardTitle className="text-xl">{feature.title}</CardTitle>
-                    <CardDescription className="text-base">
+                    <CardTitle className="text-xl text-white mb-3">{feature.title}</CardTitle>
+                    <CardDescription className="text-base text-slate-300">
                       {feature.description}
                     </CardDescription>
                   </CardHeader>
@@ -278,17 +277,17 @@ export default function Landing() {
 
         {/* Stats Section */}
         <motion.div 
-          className="bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-xl rounded-3xl border border-border/50 p-12 mt-32 relative overflow-hidden"
+          className="bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-3xl border-2 border-slate-700/50 p-12 mt-32 relative overflow-hidden shadow-2xl"
           initial={{ opacity: 0, y: 50 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.8 }}
         >
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 via-transparent to-blue-500/10" />
           
           <div className="text-center mb-12 relative z-10">
             <motion.h3 
-              className="text-4xl font-bold bg-gradient-to-r from-foreground to-primary bg-clip-text text-transparent mb-4"
+              className="text-4xl font-bold bg-gradient-to-r from-white to-emerald-200 bg-clip-text text-transparent mb-4"
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
@@ -296,7 +295,7 @@ export default function Landing() {
               Trusted by Growing Businesses
             </motion.h3>
             <motion.p 
-              className="text-xl text-muted-foreground"
+              className="text-xl text-slate-300"
               initial={{ opacity: 0 }}
               whileInView={{ opacity: 1 }}
               viewport={{ once: true }}
@@ -308,9 +307,9 @@ export default function Landing() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12 relative z-10">
             {[
-              { end: 500, suffix: "+", label: "Companies Using CRM Pro", color: "from-primary to-chart-2" },
-              { end: 85, suffix: "%", label: "Average Sales Increase", color: "from-chart-2 to-chart-3" },
-              { end: 24, suffix: "/7", label: "Customer Support", color: "from-chart-3 to-chart-4" }
+              { end: 500, suffix: "+", label: "Companies Using CRM Pro", color: "from-emerald-400 to-cyan-400" },
+              { end: 85, suffix: "%", label: "Average Sales Increase", color: "from-cyan-400 to-blue-400" },
+              { end: 24, suffix: "/7", label: "Customer Support", color: "from-blue-400 to-purple-400" }
             ].map((stat, index) => (
               <motion.div 
                 key={index}
@@ -327,7 +326,7 @@ export default function Landing() {
                   <AnimatedCounter end={stat.end} />
                   {stat.suffix}
                 </motion.div>
-                <div className="text-muted-foreground text-lg">{stat.label}</div>
+                <div className="text-slate-300 text-lg font-medium">{stat.label}</div>
               </motion.div>
             ))}
           </div>
@@ -343,12 +342,12 @@ export default function Landing() {
         >
           <div className="text-center mb-16">
             <motion.h3 
-              className="text-4xl font-bold mb-4"
+              className="text-4xl md:text-5xl font-bold mb-4"
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
             >
-              <span className="bg-gradient-to-r from-foreground to-primary bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-white via-emerald-200 to-white bg-clip-text text-transparent">
                 Powerful Features for Modern Sales Teams
               </span>
             </motion.h3>
@@ -359,48 +358,54 @@ export default function Landing() {
               {
                 title: "AI-Powered Automation",
                 features: ["Lead Scoring", "Sales Forecasting", "Smart Recommendations", "Email Generation"],
-                gradient: "from-purple-500/10 to-pink-500/10"
+                gradient: "from-purple-600 to-pink-600",
+                icon: Brain
               },
               {
                 title: "Advanced Analytics",
                 features: ["Pipeline Velocity", "Conversion Tracking", "Bottleneck Detection", "Team Performance"],
-                gradient: "from-blue-500/10 to-cyan-500/10"
+                gradient: "from-blue-600 to-cyan-600",
+                icon: PieChart
               },
               {
                 title: "Workflow Management",
                 features: ["Approval Routing", "Custom Dashboards", "Email Sequences", "Task Automation"],
-                gradient: "from-orange-500/10 to-yellow-500/10"
+                gradient: "from-orange-600 to-yellow-600",
+                icon: Settings
               },
               {
                 title: "Integration & API",
                 features: ["REST API", "Swagger Docs", "API Keys", "Webhooks"],
-                gradient: "from-green-500/10 to-emerald-500/10"
+                gradient: "from-emerald-600 to-green-600",
+                icon: Zap
               }
             ].map((section, index) => (
               <motion.div
                 key={index}
-                className={`p-8 rounded-2xl bg-gradient-to-br ${section.gradient} border border-border/50 backdrop-blur-sm`}
+                className={`p-8 rounded-2xl bg-slate-800/80 backdrop-blur-xl border-2 border-slate-700/50 shadow-xl hover:shadow-2xl transition-shadow`}
                 initial={{ opacity: 0, x: index % 2 === 0 ? -50 : 50 }}
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.1 }}
                 whileHover={{ scale: 1.02 }}
               >
-                <h4 className="text-2xl font-bold mb-6 flex items-center gap-3">
-                  <Settings className="w-6 h-6 text-primary" />
+                <h4 className="text-2xl font-bold mb-6 flex items-center gap-3 text-white">
+                  <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${section.gradient} flex items-center justify-center shadow-lg`}>
+                    <section.icon className="w-6 h-6 text-white" />
+                  </div>
                   {section.title}
                 </h4>
                 <ul className="space-y-3">
                   {section.features.map((feature, idx) => (
                     <motion.li 
                       key={idx}
-                      className="flex items-center gap-3 text-muted-foreground"
+                      className="flex items-center gap-3 text-slate-300"
                       initial={{ opacity: 0, x: -20 }}
                       whileInView={{ opacity: 1, x: 0 }}
                       viewport={{ once: true }}
                       transition={{ delay: index * 0.1 + idx * 0.05 }}
                     >
-                      <div className="w-2 h-2 rounded-full bg-gradient-to-r from-primary to-chart-2" />
+                      <div className={`w-2 h-2 rounded-full bg-gradient-to-r ${section.gradient}`} />
                       {feature}
                     </motion.li>
                   ))}
@@ -420,7 +425,7 @@ export default function Landing() {
         >
           <motion.div
             animate={{
-              scale: [1, 1.05, 1],
+              scale: [1, 1.02, 1],
             }}
             transition={{
               duration: 3,
@@ -428,14 +433,14 @@ export default function Landing() {
               ease: "easeInOut"
             }}
           >
-            <h3 className="text-5xl font-bold mb-6">
-              <span className="bg-gradient-to-r from-foreground via-primary to-chart-2 bg-clip-text text-transparent">
+            <h3 className="text-5xl md:text-6xl font-bold mb-6">
+              <span className="bg-gradient-to-r from-white via-emerald-300 to-cyan-300 bg-clip-text text-transparent">
                 Ready to Transform Your Sales?
               </span>
             </h3>
           </motion.div>
           <motion.p 
-            className="text-xl text-muted-foreground mb-10 max-w-2xl mx-auto"
+            className="text-xl md:text-2xl text-slate-300 mb-10 max-w-2xl mx-auto"
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
@@ -450,7 +455,7 @@ export default function Landing() {
             <Button 
               size="lg" 
               onClick={handleLogin}
-              className="px-16 py-7 text-xl bg-gradient-to-r from-primary via-chart-2 to-primary bg-size-200 bg-pos-0 hover:bg-pos-100 transition-all duration-500 shadow-2xl shadow-primary/30"
+              className="px-16 py-7 text-xl bg-gradient-to-r from-emerald-500 via-cyan-500 to-blue-500 hover:from-emerald-600 hover:via-cyan-600 hover:to-blue-600 text-white font-bold shadow-2xl shadow-emerald-500/50 border-0"
               data-testid="button-cta-login"
             >
               <Sparkles className="w-6 h-6 mr-2" />
