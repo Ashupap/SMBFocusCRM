@@ -27,6 +27,7 @@ import {
   syncedEmails,
   pipelineMetrics,
   salesPerformance,
+  scheduledExports,
   type User,
   type UpsertUser,
   type Company,
@@ -77,6 +78,8 @@ import {
   type InsertPipelineMetric,
   type SalesPerformance,
   type InsertSalesPerformance,
+  type ScheduledExport,
+  type InsertScheduledExport,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, asc, count, sum, and, gte, lt, sql, isNull } from "drizzle-orm";
@@ -226,6 +229,13 @@ export interface IStorage {
   createPipelineMetric(metric: InsertPipelineMetric): Promise<PipelineMetric>;
   getSalesPerformance(userId: string, period?: string): Promise<SalesPerformance[]>;
   createSalesPerformance(performance: InsertSalesPerformance): Promise<SalesPerformance>;
+
+  // Scheduled Export operations
+  getScheduledExports(userId: string): Promise<ScheduledExport[]>;
+  createScheduledExport(exportConfig: InsertScheduledExport): Promise<ScheduledExport>;
+  updateScheduledExport(id: string, exportConfig: Partial<InsertScheduledExport>): Promise<ScheduledExport>;
+  deleteScheduledExport(id: string): Promise<void>;
+  getActiveScheduledExports(): Promise<ScheduledExport[]>;
 
   // Approval Workflow operations
   getApprovalWorkflows(): Promise<ApprovalWorkflow[]>;
@@ -1286,6 +1296,46 @@ export class DatabaseStorage implements IStorage {
       .values(performance)
       .returning();
     return newPerformance;
+  }
+
+  // Scheduled Export operations
+  async getScheduledExports(userId: string): Promise<ScheduledExport[]> {
+    return await db
+      .select()
+      .from(scheduledExports)
+      .where(eq(scheduledExports.userId, userId))
+      .orderBy(desc(scheduledExports.createdAt));
+  }
+
+  async createScheduledExport(exportConfig: InsertScheduledExport): Promise<ScheduledExport> {
+    const [newExport] = await db
+      .insert(scheduledExports)
+      .values(exportConfig)
+      .returning();
+    return newExport;
+  }
+
+  async updateScheduledExport(id: string, exportConfig: Partial<InsertScheduledExport>): Promise<ScheduledExport> {
+    const [updated] = await db
+      .update(scheduledExports)
+      .set({ ...exportConfig, updatedAt: new Date() })
+      .where(eq(scheduledExports.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteScheduledExport(id: string): Promise<void> {
+    await db
+      .delete(scheduledExports)
+      .where(eq(scheduledExports.id, id));
+  }
+
+  async getActiveScheduledExports(): Promise<ScheduledExport[]> {
+    return await db
+      .select()
+      .from(scheduledExports)
+      .where(eq(scheduledExports.isActive, true))
+      .orderBy(asc(scheduledExports.nextRunAt));
   }
 
   // Approval Workflow operations

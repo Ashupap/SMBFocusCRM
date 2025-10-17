@@ -453,6 +453,40 @@ export const salesPerformance = pgTable("sales_performance", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Scheduled Exports
+export const scheduledExportFrequencyEnum = pgEnum('scheduled_export_frequency', [
+  'daily',
+  'weekly',
+  'monthly'
+]);
+
+export const scheduledExportFormatEnum = pgEnum('scheduled_export_format', [
+  'csv',
+  'excel'
+]);
+
+export const scheduledExportTypeEnum = pgEnum('scheduled_export_type', [
+  'contacts',
+  'companies',
+  'deals',
+  'activities'
+]);
+
+export const scheduledExports = pgTable("scheduled_exports", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  name: varchar("name").notNull(),
+  type: scheduledExportTypeEnum("type").notNull(),
+  format: scheduledExportFormatEnum("format").notNull().default('csv'),
+  frequency: scheduledExportFrequencyEnum("frequency").notNull(),
+  emailTo: text("email_to").array().notNull(),
+  isActive: boolean("is_active").notNull().default(true),
+  lastRunAt: timestamp("last_run_at"),
+  nextRunAt: timestamp("next_run_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Define relations
 export const usersRelations = relations(users, ({ many }) => ({
   contacts: many(contacts),
@@ -766,6 +800,12 @@ export const insertSalesPerformanceSchema = createInsertSchema(salesPerformance)
   createdAt: true,
 });
 
+export const insertScheduledExportSchema = createInsertSchema(scheduledExports).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // New table types
 export type InsertEmailTemplate = z.infer<typeof insertEmailTemplateSchema>;
 export type EmailTemplate = typeof emailTemplates.$inferSelect;
@@ -801,6 +841,8 @@ export type InsertPipelineMetric = z.infer<typeof insertPipelineMetricSchema>;
 export type PipelineMetric = typeof pipelineMetrics.$inferSelect;
 export type InsertSalesPerformance = z.infer<typeof insertSalesPerformanceSchema>;
 export type SalesPerformance = typeof salesPerformance.$inferSelect;
+export type InsertScheduledExport = z.infer<typeof insertScheduledExportSchema>;
+export type ScheduledExport = typeof scheduledExports.$inferSelect;
 
 // Dashboard types
 export type DashboardMetrics = {
