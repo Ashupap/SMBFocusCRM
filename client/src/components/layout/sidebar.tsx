@@ -14,7 +14,8 @@ import {
   MoreVertical,
   Brain,
   FileText,
-  CheckSquare
+  CheckSquare,
+  LayoutGrid
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -28,6 +29,7 @@ const navigation = [
   { name: "AI Insights", href: "/ai-insights", icon: Brain },
   { name: "Email Templates", href: "/email-templates", icon: FileText },
   { name: "Approvals", href: "/approvals", icon: CheckSquare },
+  { name: "Custom Dashboard", href: "/custom-dashboard", icon: LayoutGrid },
 ];
 
 const settingsNavigation = [

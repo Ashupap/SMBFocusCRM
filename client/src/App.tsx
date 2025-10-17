@@ -17,6 +17,7 @@ import Reports from "@/pages/reports";
 import AIInsights from "@/pages/AIInsights";
 import EmailTemplates from "@/pages/EmailTemplates";
 import Approvals from "@/pages/Approvals";
+import CustomDashboard from "@/pages/CustomDashboard";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -48,6 +49,7 @@ function Router() {
           <Route path="/ai-insights" component={AIInsights} />
           <Route path="/email-templates" component={EmailTemplates} />
           <Route path="/approvals" component={Approvals} />
+          <Route path="/custom-dashboard" component={CustomDashboard} />
         </>
       )}
       <Route component={NotFound} />
