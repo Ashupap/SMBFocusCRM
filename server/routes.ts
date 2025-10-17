@@ -12,6 +12,7 @@ import emailRoutes from "./emailRoutes";
 import approvalRoutes from "./approvalRoutes";
 import dashboardRoutes from "./dashboardRoutes";
 import analyticsRoutes from "./analyticsRoutes";
+import importExportRoutes from "./importExportRoutes";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
@@ -34,6 +35,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Analytics routes
   app.use(analyticsRoutes);
+
+  // Import/Export routes
+  app.use(importExportRoutes);
 
   // Legacy Replit OIDC route - keeping for backwards compatibility during migration
   app.get('/api/auth/replit-user', isAuthenticated, async (req: any, res) => {

@@ -19,6 +19,7 @@ import EmailTemplates from "@/pages/EmailTemplates";
 import Approvals from "@/pages/Approvals";
 import CustomDashboard from "@/pages/CustomDashboard";
 import PipelineAnalytics from "@/pages/PipelineAnalytics";
+import ImportExport from "@/pages/ImportExport";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -52,6 +53,7 @@ function Router() {
           <Route path="/approvals" component={Approvals} />
           <Route path="/custom-dashboard" component={CustomDashboard} />
           <Route path="/pipeline-analytics" component={PipelineAnalytics} />
+          <Route path="/import-export" component={ImportExport} />
         </>
       )}
       <Route component={NotFound} />

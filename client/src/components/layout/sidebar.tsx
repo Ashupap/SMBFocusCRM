@@ -15,7 +15,8 @@ import {
   Brain,
   FileText,
   CheckSquare,
-  LayoutGrid
+  LayoutGrid,
+  ArrowRightLeft
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -31,6 +32,7 @@ const navigation = [
   { name: "Approvals", href: "/approvals", icon: CheckSquare },
   { name: "Custom Dashboard", href: "/custom-dashboard", icon: LayoutGrid },
   { name: "Pipeline Analytics", href: "/pipeline-analytics", icon: BarChart3 },
+  { name: "Import/Export", href: "/import-export", icon: ArrowRightLeft },
 ];
 
 const settingsNavigation = [
