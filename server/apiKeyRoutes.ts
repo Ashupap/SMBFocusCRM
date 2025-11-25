@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { storage } from './storage';
-import { authenticateToken } from './authMiddleware';
+import { authenticateToken, requireManager } from './authMiddleware';
 import crypto from 'crypto';
 import { createInsertSchema } from 'drizzle-zod';
 import { apiKeys } from '@shared/schema';
@@ -13,7 +13,7 @@ const insertApiKeySchema = createInsertSchema(apiKeys).omit({
 });
 
 // Generate API key
-router.post('/api/api-keys', authenticateToken, async (req: any, res) => {
+router.post('/api/api-keys', authenticateToken, requireManager, async (req: any, res) => {
   try {
     const userId = (req.user as any).id;
     const { name, permissions, expiresAt } = req.body;
@@ -57,7 +57,7 @@ router.get('/api/api-keys', authenticateToken, async (req: any, res) => {
 });
 
 // Revoke API key
-router.delete('/api/api-keys/:id', authenticateToken, async (req: any, res) => {
+router.delete('/api/api-keys/:id', authenticateToken, requireManager, async (req: any, res) => {
   try {
     await storage.revokeApiKey(req.params.id);
     res.json({ success: true });

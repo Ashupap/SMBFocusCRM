@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { storage } from './storage';
-import { authenticateToken } from './authMiddleware';
+import { authenticateToken, requireManager, requireAdmin } from './authMiddleware';
 import { createInsertSchema } from 'drizzle-zod';
 import { emailTemplates, emailSequences, emailSequenceSteps } from '@shared/schema';
 
@@ -53,7 +53,7 @@ router.get('/api/email-templates/:id', authenticateToken, async (req, res) => {
   }
 });
 
-router.post('/api/email-templates', authenticateToken, async (req, res) => {
+router.post('/api/email-templates', authenticateToken, requireManager, async (req, res) => {
   try {
     const userId = (req.user as any).id;
     const validated = insertEmailTemplateSchema.parse(req.body);
@@ -70,7 +70,7 @@ router.post('/api/email-templates', authenticateToken, async (req, res) => {
   }
 });
 
-router.patch('/api/email-templates/:id', authenticateToken, async (req, res) => {
+router.patch('/api/email-templates/:id', authenticateToken, requireManager, async (req, res) => {
   try {
     const { id } = req.params;
     const updates = req.body;
@@ -83,7 +83,7 @@ router.patch('/api/email-templates/:id', authenticateToken, async (req, res) => 
   }
 });
 
-router.delete('/api/email-templates/:id', authenticateToken, async (req, res) => {
+router.delete('/api/email-templates/:id', authenticateToken, requireManager, async (req, res) => {
   try {
     const { id } = req.params;
     await storage.deleteEmailTemplate(id);

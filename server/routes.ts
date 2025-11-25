@@ -492,7 +492,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/campaigns', authenticateToken, async (req: any, res) => {
+  app.post('/api/campaigns', authenticateToken, requireManager, async (req: any, res) => {
     try {
       const userId = (req.user as any).id;
       const campaignData = insertEmailCampaignSchema.parse({ ...req.body, ownerId: userId });
@@ -507,7 +507,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/campaigns/:id/send', authenticateToken, async (req: any, res) => {
+  app.post('/api/campaigns/:id/send', authenticateToken, requireManager, async (req: any, res) => {
     try {
       const campaignId = req.params.id;
       const { contactIds } = req.body;
@@ -524,7 +524,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put('/api/campaigns/:id', authenticateToken, async (req: any, res) => {
+  app.put('/api/campaigns/:id', authenticateToken, requireManager, async (req: any, res) => {
     try {
       const campaignData = insertEmailCampaignSchema.partial().parse(req.body);
       const campaign = await storage.updateCampaign(req.params.id, campaignData);
@@ -538,7 +538,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/campaigns/:id', authenticateToken, async (req: any, res) => {
+  app.delete('/api/campaigns/:id', authenticateToken, requireManager, async (req: any, res) => {
     try {
       await storage.deleteCampaign(req.params.id);
       res.status(204).send();

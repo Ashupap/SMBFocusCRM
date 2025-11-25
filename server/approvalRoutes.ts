@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { storage } from './storage';
-import { authenticateToken } from './authMiddleware';
+import { authenticateToken, requireManager, requireAdmin } from './authMiddleware';
 import { createInsertSchema } from 'drizzle-zod';
 import { approvalWorkflows, workflowSteps, approvalRequests, approvalActions } from '@shared/schema';
 
@@ -58,7 +58,7 @@ router.get('/api/approval-workflows/:id', authenticateToken, async (req, res) =>
   }
 });
 
-router.post('/api/approval-workflows', authenticateToken, async (req, res) => {
+router.post('/api/approval-workflows', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const validated = insertApprovalWorkflowSchema.parse(req.body);
     const workflow = await storage.createApprovalWorkflow(validated);
@@ -69,7 +69,7 @@ router.post('/api/approval-workflows', authenticateToken, async (req, res) => {
   }
 });
 
-router.patch('/api/approval-workflows/:id', authenticateToken, async (req, res) => {
+router.patch('/api/approval-workflows/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const workflow = await storage.updateApprovalWorkflow(id, req.body);
@@ -80,7 +80,7 @@ router.patch('/api/approval-workflows/:id', authenticateToken, async (req, res) 
   }
 });
 
-router.delete('/api/approval-workflows/:id', authenticateToken, async (req, res) => {
+router.delete('/api/approval-workflows/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     await storage.deleteApprovalWorkflow(id);
@@ -92,7 +92,7 @@ router.delete('/api/approval-workflows/:id', authenticateToken, async (req, res)
 });
 
 // Workflow Step Routes
-router.post('/api/workflow-steps', authenticateToken, async (req, res) => {
+router.post('/api/workflow-steps', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const validated = insertWorkflowStepSchema.parse(req.body);
     const step = await storage.createWorkflowStep(validated);
