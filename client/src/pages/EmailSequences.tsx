@@ -196,7 +196,7 @@ export default function EmailSequences() {
                   </CardHeader>
                   <CardContent>
                     <p className="text-sm text-muted-foreground">
-                      Created {new Date(sequence.createdAt).toLocaleDateString()}
+                      Created {sequence.createdAt ? new Date(sequence.createdAt).toLocaleDateString() : 'N/A'}
                     </p>
                   </CardContent>
                 </Card>

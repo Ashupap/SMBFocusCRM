@@ -47,12 +47,14 @@ function Router() {
           <Route path="/" component={Dashboard} />
           <Route path="/dashboard" component={Dashboard} />
           <Route path="/contacts" component={Contacts} />
+          <Route path="/companies" component={Companies} />
           <Route path="/deals" component={Deals} />
           <Route path="/activities" component={Activities} />
           <Route path="/campaigns" component={Campaigns} />
           <Route path="/reports" component={Reports} />
           <Route path="/ai-insights" component={AIInsights} />
           <Route path="/email-templates" component={EmailTemplates} />
+          <Route path="/email-sequences" component={EmailSequences} />
           <Route path="/approvals" component={Approvals} />
           <Route path="/custom-dashboard" component={CustomDashboard} />
           <Route path="/pipeline-analytics" component={PipelineAnalytics} />

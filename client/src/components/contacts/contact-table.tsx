@@ -75,7 +75,7 @@ export default function ContactTable() {
         return;
       }
       
-      const csvContent = convertToCSV(data, contactExportHeaders as Array<{ key: string; label: string }>);
+      const csvContent = convertToCSV(data, contactExportHeaders as unknown as Array<{ key: string; label: string }>);
       const timestamp = generateTimestamp();
       downloadCSV(csvContent, `contacts_export_${timestamp}.csv`);
       toast({
