@@ -21,6 +21,8 @@ import CustomDashboard from "@/pages/CustomDashboard";
 import PipelineAnalytics from "@/pages/PipelineAnalytics";
 import ImportExport from "@/pages/ImportExport";
 import ApiKeys from "@/pages/ApiKeys";
+import Companies from "@/pages/companies";
+import EmailSequences from "@/pages/EmailSequences";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
