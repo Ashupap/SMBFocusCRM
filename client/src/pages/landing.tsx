@@ -101,7 +101,6 @@ export default function Landing() {
 
   // Parallax transforms
   const heroParallax = useTransform(scrollY, [0, 300], [0, 100]);
-  const heroOpacity = useTransform(scrollY, [0, 400], [1, 0.3]);
   const bgShift1Y = useTransform(scrollY, [0, 800], [0, 300]);
   const bgShift2Y = useTransform(scrollY, [0, 800], [0, -300]);
 
@@ -152,8 +151,7 @@ export default function Landing() {
         ref={heroRef}
         className="container mx-auto px-4 py-20 relative z-10"
         style={{ 
-          y: heroParallax,
-          opacity: heroOpacity
+          y: heroParallax
         }}
       >
         <motion.div 
