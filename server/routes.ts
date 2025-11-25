@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
-import { authenticateToken } from "./authMiddleware";
+import { authenticateToken, requireManager, requireAdmin } from "./authMiddleware";
 import { insertContactSchema, insertCompanySchema, insertDealSchema, insertActivitySchema, insertEmailCampaignSchema } from "@shared/schema";
 import { z } from "zod";
 import { sendEmailCampaign } from "./emailService";
@@ -59,8 +59,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // User routes
-  app.get('/api/users', authenticateToken, async (req: any, res) => {
+  // User routes (Manager/Admin only)
+  app.get('/api/users', authenticateToken, requireManager, async (req: any, res) => {
     try {
       const users = await storage.getAllUsers();
       res.json(users);
@@ -141,7 +141,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/companies', authenticateToken, async (req: any, res) => {
+  app.post('/api/companies', authenticateToken, requireManager, async (req: any, res) => {
     try {
       const companyData = insertCompanySchema.parse(req.body);
       const company = await storage.createCompany(companyData);
@@ -155,7 +155,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put('/api/companies/:id', authenticateToken, async (req: any, res) => {
+  app.put('/api/companies/:id', authenticateToken, requireManager, async (req: any, res) => {
     try {
       const companyData = insertCompanySchema.partial().parse(req.body);
       const company = await storage.updateCompany(req.params.id, companyData);
@@ -169,7 +169,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/companies/:id', authenticateToken, async (req: any, res) => {
+  app.delete('/api/companies/:id', authenticateToken, requireManager, async (req: any, res) => {
     try {
       await storage.deleteCompany(req.params.id);
       res.status(204).send();
@@ -243,7 +243,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/contacts/:id', authenticateToken, async (req: any, res) => {
+  app.delete('/api/contacts/:id', authenticateToken, requireManager, async (req: any, res) => {
     try {
       await storage.deleteContact(req.params.id);
       res.status(204).send();
@@ -347,7 +347,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/deals/:id', authenticateToken, async (req: any, res) => {
+  app.delete('/api/deals/:id', authenticateToken, requireManager, async (req: any, res) => {
     try {
       await storage.deleteDeal(req.params.id);
       res.status(204).send();
@@ -457,7 +457,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/activities/:id', authenticateToken, async (req: any, res) => {
+  app.delete('/api/activities/:id', authenticateToken, requireManager, async (req: any, res) => {
     try {
       await storage.deleteActivity(req.params.id);
       res.status(204).send();
