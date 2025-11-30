@@ -116,12 +116,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Helper to normalize service response to always return array
+  const unwrapData = <T>(result: T[] | { data: T[]; pagination: any }): T[] => {
+    return Array.isArray(result) ? result : result.data;
+  };
+
   // Company routes
   app.get('/api/companies', authenticateToken, async (req: Request, res: Response) => {
     try {
       const userId = (req as any).user.id;
-      const companies = await crmService.getCompanies(userId);
-      res.json(companies);
+      const page = req.query.page ? parseInt(req.query.page as string) : undefined;
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
+      
+      if (page || limit) {
+        // Return paginated response with explicit structure
+        const result = await crmService.getCompanies(userId, { page, limit });
+        if (!Array.isArray(result)) {
+          res.json(result);
+        } else {
+          res.json({ data: result, pagination: { page: 1, limit: result.length, total: result.length, totalPages: 1 } });
+        }
+      } else {
+        // Return array for backward compatibility
+        const result = await crmService.getCompanies(userId);
+        res.json(unwrapData(result));
+      }
     } catch (error) {
       console.error("Error fetching companies:", error);
       res.status(500).json({ message: "Failed to fetch companies" });
@@ -187,8 +206,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/contacts', authenticateToken, async (req: Request, res: Response) => {
     try {
       const userId = (req as any).user.id;
-      const contacts = await crmService.getContacts(userId);
-      res.json(contacts);
+      const page = req.query.page ? parseInt(req.query.page as string) : undefined;
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
+      
+      if (page || limit) {
+        // Return paginated response with explicit structure
+        const result = await crmService.getContacts(userId, { page, limit });
+        if (!Array.isArray(result)) {
+          res.json(result);
+        } else {
+          res.json({ data: result, pagination: { page: 1, limit: result.length, total: result.length, totalPages: 1 } });
+        }
+      } else {
+        // Return array for backward compatibility
+        const result = await crmService.getContacts(userId);
+        res.json(unwrapData(result));
+      }
     } catch (error) {
       console.error("Error fetching contacts:", error);
       res.status(500).json({ message: "Failed to fetch contacts" });
@@ -211,12 +244,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/contacts', authenticateToken, async (req: Request, res: Response) => {
     try {
       const userId = (req as any).user.id;
-      // Convert "none" to null for companyId
-      const requestData = { ...req.body, ownerId: userId };
-      if (requestData.companyId === "none") {
-        requestData.companyId = null;
-      }
-      const contactData = insertContactSchema.parse(requestData);
+      const contactData = insertContactSchema.parse({ ...req.body, ownerId: userId });
       const contact = await crmService.createContact(contactData);
       res.status(201).json(contact);
     } catch (error) {
@@ -230,12 +258,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put('/api/contacts/:id', authenticateToken, async (req: Request, res: Response) => {
     try {
-      // Convert "none" to null for companyId  
-      const requestData = { ...req.body };
-      if (requestData.companyId === "none") {
-        requestData.companyId = null;
-      }
-      const contactData = insertContactSchema.partial().parse(requestData);
+      const contactData = insertContactSchema.partial().parse(req.body);
       const contact = await crmService.updateContact(req.params.id, contactData);
       res.json(contact);
     } catch (error) {
@@ -277,10 +300,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/contacts/export', authenticateToken, async (req: Request, res: Response) => {
     try {
       const userId = (req as any).user.id;
-      const contacts = await crmService.getContacts(userId);
+      // Get all contacts without pagination for export
+      const result = await crmService.getContacts(userId);
+      const contacts = Array.isArray(result) ? result : result.data;
       
       // Transform contacts for export, including company name
-      const exportData = contacts.map(contact => ({
+      const exportData = contacts.map((contact: any) => ({
         firstName: contact.firstName,
         lastName: contact.lastName,
         email: contact.email,
@@ -301,8 +326,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/deals', authenticateToken, async (req: Request, res: Response) => {
     try {
       const userId = (req as any).user.id;
-      const deals = await crmService.getDeals(userId);
-      res.json(deals);
+      const page = req.query.page ? parseInt(req.query.page as string) : undefined;
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
+      
+      if (page || limit) {
+        // Return paginated response with explicit structure
+        const result = await crmService.getDeals(userId, { page, limit });
+        if (!Array.isArray(result)) {
+          res.json(result);
+        } else {
+          res.json({ data: result, pagination: { page: 1, limit: result.length, total: result.length, totalPages: 1 } });
+        }
+      } else {
+        // Return array for backward compatibility
+        const result = await crmService.getDeals(userId);
+        res.json(unwrapData(result));
+      }
     } catch (error) {
       console.error("Error fetching deals:", error);
       res.status(500).json({ message: "Failed to fetch deals" });
@@ -364,10 +403,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/deals/export', authenticateToken, async (req: Request, res: Response) => {
     try {
       const userId = (req as any).user.id;
-      const deals = await crmService.getDeals(userId);
+      // Get all deals without pagination for export
+      const result = await crmService.getDeals(userId);
+      const deals = Array.isArray(result) ? result : result.data;
       
       // Transform deals for export, including contact and company names
-      const exportData = deals.map(deal => ({
+      const exportData = deals.map((deal: any) => ({
         title: deal.title,
         description: deal.description,
         value: deal.value,
@@ -413,16 +454,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/activities', authenticateToken, async (req: Request, res: Response) => {
     try {
       const userId = (req as any).user.id;
-      // Convert date strings and handle "none" values
       const requestData = { ...req.body, ownerId: userId };
       if (requestData.scheduledAt && typeof requestData.scheduledAt === 'string') {
         requestData.scheduledAt = new Date(requestData.scheduledAt);
-      }
-      if (requestData.contactId === "none") {
-        requestData.contactId = null;
-      }
-      if (requestData.dealId === "none") {
-        requestData.dealId = null;
       }
       const activityData = insertActivitySchema.parse(requestData);
       const activity = await activityService.createActivity(activityData);
@@ -438,16 +472,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put('/api/activities/:id', authenticateToken, async (req: Request, res: Response) => {
     try {
-      // Convert date strings and handle "none" values
       const requestData = { ...req.body };
       if (requestData.scheduledAt && typeof requestData.scheduledAt === 'string') {
         requestData.scheduledAt = new Date(requestData.scheduledAt);
-      }
-      if (requestData.contactId === "none") {
-        requestData.contactId = null;
-      }
-      if (requestData.dealId === "none") {
-        requestData.dealId = null;
       }
       const activityData = insertActivitySchema.partial().parse(requestData);
       const activity = await activityService.updateActivity(req.params.id, activityData);

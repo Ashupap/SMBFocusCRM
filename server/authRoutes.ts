@@ -131,7 +131,7 @@ router.post('/register', rateLimit(15 * 60 * 1000, 5), async (req, res) => {
     });
 
     res.status(201).json({
-      message: 'User registered successfully. Please verify your email address.',
+      message: 'User registered successfully. Please check your email to verify your account.',
       user: {
         id: newUser.id,
         email: newUser.email,
@@ -140,7 +140,6 @@ router.post('/register', rateLimit(15 * 60 * 1000, 5), async (req, res) => {
         role: newUser.role,
         emailVerified: false,
       },
-      verificationToken, // In production, send this via email
     });
 
   } catch (error) {

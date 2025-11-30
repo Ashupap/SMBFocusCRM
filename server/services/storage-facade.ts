@@ -82,8 +82,9 @@ export class StorageFacade {
     return authService.upsertUser(user);
   }
 
-  getCompanies(ownerId: string): Promise<Company[]> {
-    return crmService.getCompanies(ownerId);
+  async getCompanies(ownerId: string): Promise<Company[]> {
+    const result = await crmService.getCompanies(ownerId);
+    return Array.isArray(result) ? result : result.data;
   }
 
   getCompany(id: string, ownerId?: string): Promise<Company | undefined> {
@@ -102,8 +103,9 @@ export class StorageFacade {
     return crmService.deleteCompany(id, ownerId);
   }
 
-  getContacts(ownerId: string): Promise<(Contact & { company?: Company })[]> {
-    return crmService.getContacts(ownerId);
+  async getContacts(ownerId: string): Promise<(Contact & { company?: Company })[]> {
+    const result = await crmService.getContacts(ownerId);
+    return Array.isArray(result) ? result : result.data;
   }
 
   getContact(id: string): Promise<(Contact & { company?: Company }) | undefined> {
@@ -126,8 +128,9 @@ export class StorageFacade {
     return crmService.importContacts(contacts);
   }
 
-  getDeals(ownerId: string): Promise<(Deal & { contact?: Contact; company?: Company })[]> {
-    return crmService.getDeals(ownerId);
+  async getDeals(ownerId: string): Promise<(Deal & { contact?: Contact; company?: Company })[]> {
+    const result = await crmService.getDeals(ownerId);
+    return Array.isArray(result) ? result : result.data;
   }
 
   getDeal(id: string): Promise<(Deal & { contact?: Contact; company?: Company }) | undefined> {

@@ -58,6 +58,7 @@ export const companies = pgTable("companies", {
   website: varchar("website"),
   phone: varchar("phone"),
   address: text("address"),
+  gstin: varchar("gstin", { length: 15 }), // Indian GST Number (15 chars) for B2B compliance
   notes: text("notes"),
   ownerId: varchar("owner_id").references(() => users.id).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
@@ -632,22 +633,36 @@ export const insertCompanySchema = createInsertSchema(companies).omit({
   updatedAt: true,
 });
 
+// Helper to transform "none" string to null for optional foreign key fields
+const noneToNull = z.preprocess(
+  (val) => (val === "none" ? null : val),
+  z.string().nullable().optional()
+);
+
 export const insertContactSchema = createInsertSchema(contacts).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+}).extend({
+  companyId: noneToNull,
 });
 
 export const insertDealSchema = createInsertSchema(deals).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+}).extend({
+  contactId: noneToNull,
+  companyId: noneToNull,
 });
 
 export const insertActivitySchema = createInsertSchema(activities).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+}).extend({
+  contactId: noneToNull,
+  dealId: noneToNull,
 });
 
 export const insertEmailCampaignSchema = createInsertSchema(emailCampaigns).omit({

@@ -10,23 +10,40 @@ import {
   type InsertDeal,
   type PipelineStage,
 } from "@shared/schema";
-import { db, eq, and, desc, asc, sql } from "./shared/data-access";
+import { db, eq, and, desc, asc, sql, count } from "./shared/data-access";
+
+// Pagination options
+export interface PaginationOptions {
+  page?: number;
+  limit?: number;
+}
+
+// Paginated result
+export interface PaginatedResult<T> {
+  data: T[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
 
 export interface ICrmService {
-  getCompanies(ownerId: string): Promise<Company[]>;
+  getCompanies(ownerId: string, options?: PaginationOptions): Promise<Company[] | PaginatedResult<Company>>;
   getCompany(id: string, ownerId?: string): Promise<Company | undefined>;
   createCompany(company: InsertCompany): Promise<Company>;
   updateCompany(id: string, company: Partial<InsertCompany>, ownerId?: string): Promise<Company>;
   deleteCompany(id: string, ownerId?: string): Promise<void>;
 
-  getContacts(ownerId: string): Promise<(Contact & { company?: Company })[]>;
+  getContacts(ownerId: string, options?: PaginationOptions): Promise<(Contact & { company?: Company })[] | PaginatedResult<Contact & { company?: Company }>>;
   getContact(id: string): Promise<(Contact & { company?: Company }) | undefined>;
   createContact(contact: InsertContact): Promise<Contact>;
   updateContact(id: string, contact: Partial<InsertContact>): Promise<Contact>;
   deleteContact(id: string): Promise<void>;
   importContacts(contacts: InsertContact[]): Promise<Contact[]>;
 
-  getDeals(ownerId: string): Promise<(Deal & { contact?: Contact; company?: Company })[]>;
+  getDeals(ownerId: string, options?: PaginationOptions): Promise<(Deal & { contact?: Contact; company?: Company })[] | PaginatedResult<Deal & { contact?: Contact; company?: Company }>>;
   getDeal(id: string): Promise<(Deal & { contact?: Contact; company?: Company }) | undefined>;
   createDeal(deal: InsertDeal): Promise<Deal>;
   updateDeal(id: string, deal: Partial<InsertDeal>): Promise<Deal>;
@@ -35,8 +52,40 @@ export interface ICrmService {
 }
 
 export class CrmService implements ICrmService {
-  async getCompanies(ownerId: string): Promise<Company[]> {
-    return await db.select().from(companies).where(eq(companies.ownerId, ownerId)).orderBy(companies.name);
+  async getCompanies(ownerId: string, options?: PaginationOptions): Promise<Company[] | PaginatedResult<Company>> {
+    // If no pagination options provided, return all (backward compatible)
+    if (!options?.page && !options?.limit) {
+      return await db.select().from(companies).where(eq(companies.ownerId, ownerId)).orderBy(companies.name);
+    }
+
+    const page = options.page || 1;
+    const limit = options.limit || 50;
+    const offset = (page - 1) * limit;
+
+    // Get total count
+    const [{ total }] = await db
+      .select({ total: count() })
+      .from(companies)
+      .where(eq(companies.ownerId, ownerId));
+
+    // Get paginated data
+    const data = await db
+      .select()
+      .from(companies)
+      .where(eq(companies.ownerId, ownerId))
+      .orderBy(companies.name)
+      .limit(limit)
+      .offset(offset);
+
+    return {
+      data,
+      pagination: {
+        page,
+        limit,
+        total: Number(total),
+        totalPages: Math.ceil(Number(total) / limit),
+      },
+    };
   }
 
   async getCompany(id: string, ownerId?: string): Promise<Company | undefined> {
@@ -78,7 +127,36 @@ export class CrmService implements ICrmService {
     await db.delete(companies).where(condition);
   }
 
-  async getContacts(ownerId: string): Promise<(Contact & { company?: Company })[]> {
+  async getContacts(ownerId: string, options?: PaginationOptions): Promise<(Contact & { company?: Company })[] | PaginatedResult<Contact & { company?: Company }>> {
+    // If no pagination options provided, return all (backward compatible)
+    if (!options?.page && !options?.limit) {
+      const result = await db
+        .select({
+          contact: contacts,
+          company: companies,
+        })
+        .from(contacts)
+        .leftJoin(companies, eq(contacts.companyId, companies.id))
+        .where(eq(contacts.ownerId, ownerId))
+        .orderBy(contacts.firstName, contacts.lastName);
+      
+      return result.map(row => ({
+        ...row.contact,
+        company: row.company || undefined,
+      }));
+    }
+
+    const page = options.page || 1;
+    const limit = options.limit || 50;
+    const offset = (page - 1) * limit;
+
+    // Get total count
+    const [{ total }] = await db
+      .select({ total: count() })
+      .from(contacts)
+      .where(eq(contacts.ownerId, ownerId));
+
+    // Get paginated data with joins
     const result = await db
       .select({
         contact: contacts,
@@ -87,12 +165,24 @@ export class CrmService implements ICrmService {
       .from(contacts)
       .leftJoin(companies, eq(contacts.companyId, companies.id))
       .where(eq(contacts.ownerId, ownerId))
-      .orderBy(contacts.firstName, contacts.lastName);
-    
-    return result.map(row => ({
+      .orderBy(contacts.firstName, contacts.lastName)
+      .limit(limit)
+      .offset(offset);
+
+    const data = result.map(row => ({
       ...row.contact,
       company: row.company || undefined,
     }));
+
+    return {
+      data,
+      pagination: {
+        page,
+        limit,
+        total: Number(total),
+        totalPages: Math.ceil(Number(total) / limit),
+      },
+    };
   }
 
   async getContact(id: string): Promise<(Contact & { company?: Company }) | undefined> {
@@ -144,7 +234,39 @@ export class CrmService implements ICrmService {
     return result;
   }
 
-  async getDeals(ownerId: string): Promise<(Deal & { contact?: Contact; company?: Company })[]> {
+  async getDeals(ownerId: string, options?: PaginationOptions): Promise<(Deal & { contact?: Contact; company?: Company })[] | PaginatedResult<Deal & { contact?: Contact; company?: Company }>> {
+    // If no pagination options provided, return all (backward compatible)
+    if (!options?.page && !options?.limit) {
+      const result = await db
+        .select({
+          deal: deals,
+          contact: contacts,
+          company: companies,
+        })
+        .from(deals)
+        .leftJoin(contacts, eq(deals.contactId, contacts.id))
+        .leftJoin(companies, eq(deals.companyId, companies.id))
+        .where(eq(deals.ownerId, ownerId))
+        .orderBy(desc(deals.createdAt));
+      
+      return result.map(row => ({
+        ...row.deal,
+        contact: row.contact || undefined,
+        company: row.company || undefined,
+      }));
+    }
+
+    const page = options.page || 1;
+    const limit = options.limit || 50;
+    const offset = (page - 1) * limit;
+
+    // Get total count
+    const [{ total }] = await db
+      .select({ total: count() })
+      .from(deals)
+      .where(eq(deals.ownerId, ownerId));
+
+    // Get paginated data with joins
     const result = await db
       .select({
         deal: deals,
@@ -155,13 +277,25 @@ export class CrmService implements ICrmService {
       .leftJoin(contacts, eq(deals.contactId, contacts.id))
       .leftJoin(companies, eq(deals.companyId, companies.id))
       .where(eq(deals.ownerId, ownerId))
-      .orderBy(desc(deals.createdAt));
-    
-    return result.map(row => ({
+      .orderBy(desc(deals.createdAt))
+      .limit(limit)
+      .offset(offset);
+
+    const data = result.map(row => ({
       ...row.deal,
       contact: row.contact || undefined,
       company: row.company || undefined,
     }));
+
+    return {
+      data,
+      pagination: {
+        page,
+        limit,
+        total: Number(total),
+        totalPages: Math.ceil(Number(total) / limit),
+      },
+    };
   }
 
   async getDeal(id: string): Promise<(Deal & { contact?: Contact; company?: Company }) | undefined> {

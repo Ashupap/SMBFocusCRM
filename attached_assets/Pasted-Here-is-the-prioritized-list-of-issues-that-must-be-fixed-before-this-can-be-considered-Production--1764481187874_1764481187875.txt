@@ -1,0 +1,146 @@
+Here is the prioritized list of issues that must be fixed before this can be considered "Production Ready" for the Indian SMB market.
+
+1. 🚨 Critical Security & Architecture (Unresolved)
+These are "stop-ship" issues. You cannot launch a SaaS product with these vulnerabilities.
+
+A. Data Leak: The "Shared Database" Problem
+
+File: server/storage.ts
+
+The Code:
+
+TypeScript
+
+async getCompanies(ownerId: string): Promise<Company[]> {
+  // Returns ALL companies in the database to ANY logged-in user
+  return await db.select().from(companies).orderBy(asc(companies.name));
+}
+The Risk: A user from Company A will see the client list of Company B. This destroys trust immediately.
+
+The Fix: You must introduce an organization_id to scope data.
+
+Update Schema (shared/schema.ts):
+
+TypeScript
+
+export const companies = pgTable("companies", {
+  // ...
+  organizationId: varchar("organization_id").notNull(), // Add this!
+});
+Update Query (server/storage.ts):
+
+TypeScript
+
+async getCompanies(userId: string, orgId: string): Promise<Company[]> {
+  return await db.select().from(companies)
+    .where(eq(companies.organizationId, orgId)); // Scope by Org ID
+}
+B. Email Verification Bypass
+
+File: server/authRoutes.ts
+
+The Code:
+
+TypeScript
+
+res.status(201).json({
+  // ...
+  verificationToken, // ❌ NEVER return this to the client!
+});
+The Risk: Attackers can register with ceo@microsoft.com, grab the token from the JSON response, and verify the account without having access to the email inbox.
+
+The Fix: Delete verificationToken from the JSON response object. Only send it via emailService.sendEmail.
+
+2. ⚠️ Scalability Blocker (New Finding)
+Missing Pagination
+
+File: server/storage.ts and client/src/components/contacts/contact-table.tsx
+
+The Code:
+
+Backend: getContacts performs a select * with no LIMIT or OFFSET.
+
+Frontend: The table renders contacts.map(...) for every single record returned.
+
+The Risk: If an SMB imports 5,000 contacts (common in India), your API call will timeout, or the user's browser will freeze trying to render 5,000 table rows at once.
+
+The Fix: Implement server-side pagination.
+
+Backend: Accept page and limit query params.
+
+TypeScript
+
+// server/storage.ts
+async getContacts(ownerId: string, page = 1, limit = 50) {
+  const offset = (page - 1) * limit;
+  return await db.select().from(contacts)
+    .where(eq(contacts.ownerId, ownerId))
+    .limit(limit)
+    .offset(offset);
+}
+Frontend: Use the Pagination component you already have in components/ui/pagination.tsx.
+
+3. 🇮🇳 Product Localization (Unresolved)
+To succeed in India, your UI must speak the local business language.
+
+A. Currency Formatting
+
+File: client/src/components/deals/deal-card.tsx
+
+Current: currency: 'USD' ($)
+
+Fix: Use INR formatting. Indian businesses operate in Lakhs/Crores.
+
+TypeScript
+
+// Use this formatter
+const formatCurrency = (value: string | number) => {
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    maximumFractionDigits: 0
+  }).format(Number(value));
+};
+B. GSTIN Support
+
+Context: Every B2B transaction in India requires a GST Number. Your companies schema lacks this.
+
+Fix: Add gstin to shared/schema.ts.
+
+TypeScript
+
+export const companies = pgTable("companies", {
+  // ...
+  gstin: varchar("gstin", { length: 15 }), // Standard 15-char format
+});
+4. 🧹 Code Quality Improvements
+A. Fragile "None" Handling
+
+File: server/routes.ts
+
+The Code:
+
+TypeScript
+
+if (requestData.companyId === "none") {
+  requestData.companyId = null;
+}
+The Issue: You are manually cleaning data inside your route handlers. This is error-prone.
+
+The Fix: Use Zod's preprocess or transform in your schema definition (shared/schema.ts) to handle this automatically.
+
+TypeScript
+
+export const insertContactSchema = createInsertSchema(contacts)
+  .extend({
+    companyId: z.string().transform(val => val === "none" ? null : val).optional()
+  });
+B. Hardcoded Secrets in Production Code
+
+File: server/emailService.ts
+
+The Code: const SENDGRID_API_KEY = ... || "SG.dummy_key_for_testing";
+
+The Risk: If you accidentally commit a real key here, it will be compromised.
+
+The Fix: Throw an error if the key is missing in production, rather than falling back to a dummy string that might confuse debugging.

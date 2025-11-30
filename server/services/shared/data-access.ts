@@ -1,8 +1,8 @@
 import { db } from "../../db";
-import { eq, and, gte, lt, desc, asc, sql } from "drizzle-orm";
+import { eq, and, gte, lt, desc, asc, sql, count } from "drizzle-orm";
 
 export { db };
-export { eq, and, gte, lt, desc, asc, sql };
+export { eq, and, gte, lt, desc, asc, sql, count };
 
 export function getDateRangeFilter(period: string) {
   const now = new Date();

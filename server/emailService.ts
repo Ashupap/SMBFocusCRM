@@ -4,11 +4,19 @@ import { storage } from './storage';
 const mailService = new MailService();
 
 // Initialize SendGrid with API key from environment
-const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY || process.env.SENDGRID_API_KEY_ENV_VAR || "SG.dummy_key_for_testing";
-mailService.setApiKey(SENDGRID_API_KEY);
+const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
 
-// Disable SendGrid if no real key is provided
-const isEmailEnabled = process.env.SENDGRID_API_KEY && process.env.SENDGRID_API_KEY.startsWith('SG.');
+// Validate API key in production
+const isProduction = process.env.NODE_ENV === 'production';
+const isEmailEnabled = SENDGRID_API_KEY && SENDGRID_API_KEY.startsWith('SG.');
+
+if (isProduction && !isEmailEnabled) {
+  console.error('CRITICAL: SENDGRID_API_KEY is not configured in production environment');
+}
+
+if (isEmailEnabled) {
+  mailService.setApiKey(SENDGRID_API_KEY);
+}
 
 interface EmailParams {
   to: string;
