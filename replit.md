@@ -211,3 +211,21 @@ Key field names to use (avoid common mistakes):
 For Indian market localization, use utilities from `client/src/lib/currency.ts`:
 - `formatCurrency(amount)` - Full format: ₹1,23,456.00
 - `formatCompactCurrency(amount)` - Compact: ₹1.23L or ₹12.3Cr (no Western "K" suffix)
+
+### Pagination Pattern
+CRM list endpoints support optional pagination:
+- **Without params**: `GET /api/contacts` returns plain array (backward compatible)
+- **With params**: `GET /api/contacts?page=1&limit=50` returns `{ data: [], pagination: { page, limit, total, totalPages } }`
+
+Service methods use union return type:
+```typescript
+getContacts(ownerId: string, options?: PaginationOptions): Promise<ContactWithCompany[] | PaginatedResult<ContactWithCompany>>
+```
+
+Use `unwrapData()` helper in routes to safely extract arrays from either format.
+
+### Security Best Practices
+- Never expose sensitive tokens (verification, reset) in API responses - email them instead
+- Use Zod transforms to sanitize input at schema level (e.g., `noneToNull` preprocess)
+- External API keys (SendGrid, etc.) must throw errors in production if missing, not use fallbacks
+- Audit logging tracks sensitive operations via `AuthService.createAuditLog()`
