@@ -151,3 +151,63 @@ The system manages the following core entities:
 - **API Key Management**: Secure key generation with expiration and revocation
 - **Webhook Support**: Real-time event notifications (schema prepared)
 - **Rate Limiting**: Built-in rate limiting for API security
+
+# Development Guidelines
+
+## Service Layer Architecture
+
+The backend follows a domain-driven service architecture with these key principles:
+
+### Service Organization
+- Each service is responsible for a single domain (Auth, CRM, Activities, Marketing, Approval, Dashboard, Integration)
+- Services are located in `server/services/` with a consistent naming pattern: `{domain}.service.ts`
+- Shared utilities are in `server/services/shared/data-access.ts`
+- The `server/services/index.ts` exports all services for easy importing
+
+### Using Services in Routes
+```typescript
+import { authService, crmService, activityService } from "./services";
+
+// In route handler
+const contacts = await crmService.getContacts(userId);
+```
+
+### Transaction Patterns
+Use `db.transaction()` for multi-step operations that must be atomic:
+
+```typescript
+// Example from ApprovalService
+async processApprovalAction(action: InsertApprovalAction): Promise<{ action: ApprovalAction; request: ApprovalRequest }> {
+  return await db.transaction(async (tx) => {
+    // Step 1: Create the action
+    const [newAction] = await tx.insert(approvalActions).values(action).returning();
+    
+    // Step 2: Update request status based on action
+    const [updatedRequest] = await tx
+      .update(approvalRequests)
+      .set({ status: newStatus, completedAt: new Date() })
+      .where(eq(approvalRequests.id, action.requestId))
+      .returning();
+    
+    return { action: newAction, request: updatedRequest };
+  });
+}
+```
+
+### When to Use Transactions
+- **DO use** for operations that modify multiple related tables
+- **DO use** when data integrity requires all-or-nothing semantics
+- **DON'T use** for simple single-table CRUD operations
+- **DON'T use** for read-only queries
+
+### Schema Field Reference
+Key field names to use (avoid common mistakes):
+- Activities: `scheduledAt` (not dueDate), `isCompleted` (not completed)
+- API Keys: `isActive` (not revokedAt) for status
+- Pipeline Metrics: `date` (not period/recordedAt)
+- Synced Emails: `sentAt` (not receivedAt)
+
+### Currency Formatting
+For Indian market localization, use utilities from `client/src/lib/currency.ts`:
+- `formatCurrency(amount)` - Full format: ₹1,23,456.00
+- `formatCompactCurrency(amount)` - Compact: ₹1.23L or ₹12.3Cr (no Western "K" suffix)

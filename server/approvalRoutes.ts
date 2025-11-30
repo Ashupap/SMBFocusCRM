@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { storage } from './storage';
+import { approvalService } from './services/approval.service';
 import { authenticateToken, requireManager, requireAdmin } from './authMiddleware';
 import { createInsertSchema } from 'drizzle-zod';
 import { approvalWorkflows, workflowSteps, approvalRequests, approvalActions } from '@shared/schema';
@@ -33,7 +33,7 @@ const insertApprovalActionSchema = createInsertSchema(approvalActions).omit({
 // Approval Workflow Routes
 router.get('/api/approval-workflows', authenticateToken, async (req, res) => {
   try {
-    const workflows = await storage.getApprovalWorkflows();
+    const workflows = await approvalService.getApprovalWorkflows();
     res.json(workflows);
   } catch (error: any) {
     console.error('Error fetching workflows:', error);
@@ -44,13 +44,13 @@ router.get('/api/approval-workflows', authenticateToken, async (req, res) => {
 router.get('/api/approval-workflows/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
-    const workflow = await storage.getApprovalWorkflow(id);
+    const workflow = await approvalService.getApprovalWorkflow(id);
     
     if (!workflow) {
       return res.status(404).json({ error: 'Workflow not found' });
     }
 
-    const steps = await storage.getWorkflowSteps(id);
+    const steps = await approvalService.getWorkflowSteps(id);
     res.json({ ...workflow, steps });
   } catch (error: any) {
     console.error('Error fetching workflow:', error);
@@ -61,7 +61,7 @@ router.get('/api/approval-workflows/:id', authenticateToken, async (req, res) =>
 router.post('/api/approval-workflows', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const validated = insertApprovalWorkflowSchema.parse(req.body);
-    const workflow = await storage.createApprovalWorkflow(validated);
+    const workflow = await approvalService.createApprovalWorkflow(validated);
     res.json(workflow);
   } catch (error: any) {
     console.error('Error creating workflow:', error);
@@ -72,7 +72,7 @@ router.post('/api/approval-workflows', authenticateToken, requireAdmin, async (r
 router.patch('/api/approval-workflows/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const workflow = await storage.updateApprovalWorkflow(id, req.body);
+    const workflow = await approvalService.updateApprovalWorkflow(id, req.body);
     res.json(workflow);
   } catch (error: any) {
     console.error('Error updating workflow:', error);
@@ -83,7 +83,7 @@ router.patch('/api/approval-workflows/:id', authenticateToken, requireAdmin, asy
 router.delete('/api/approval-workflows/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    await storage.deleteApprovalWorkflow(id);
+    await approvalService.deleteApprovalWorkflow(id);
     res.json({ success: true });
   } catch (error: any) {
     console.error('Error deleting workflow:', error);
@@ -95,7 +95,7 @@ router.delete('/api/approval-workflows/:id', authenticateToken, requireAdmin, as
 router.post('/api/workflow-steps', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const validated = insertWorkflowStepSchema.parse(req.body);
-    const step = await storage.createWorkflowStep(validated);
+    const step = await approvalService.createWorkflowStep(validated);
     res.json(step);
   } catch (error: any) {
     console.error('Error creating step:', error);
@@ -106,7 +106,7 @@ router.post('/api/workflow-steps', authenticateToken, requireAdmin, async (req, 
 router.delete('/api/workflow-steps/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
-    await storage.deleteWorkflowStep(id);
+    await approvalService.deleteWorkflowStep(id);
     res.json({ success: true });
   } catch (error: any) {
     console.error('Error deleting step:', error);
@@ -118,7 +118,7 @@ router.delete('/api/workflow-steps/:id', authenticateToken, async (req, res) => 
 router.get('/api/approval-requests', authenticateToken, async (req, res) => {
   try {
     const userId = (req.user as any).id;
-    const requests = await storage.getApprovalRequests(userId);
+    const requests = await approvalService.getApprovalRequests(userId);
     res.json(requests);
   } catch (error: any) {
     console.error('Error fetching requests:', error);
@@ -129,13 +129,13 @@ router.get('/api/approval-requests', authenticateToken, async (req, res) => {
 router.get('/api/approval-requests/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
-    const request = await storage.getApprovalRequest(id);
+    const request = await approvalService.getApprovalRequest(id);
     
     if (!request) {
       return res.status(404).json({ error: 'Request not found' });
     }
 
-    const actions = await storage.getApprovalActions(id);
+    const actions = await approvalService.getApprovalActions(id);
     res.json({ ...request, actions });
   } catch (error: any) {
     console.error('Error fetching request:', error);
@@ -148,7 +148,7 @@ router.post('/api/approval-requests', authenticateToken, async (req, res) => {
     const userId = (req.user as any).id;
     const validated = insertApprovalRequestSchema.parse(req.body);
     
-    const request = await storage.createApprovalRequest({
+    const request = await approvalService.createApprovalRequest({
       ...validated,
       requesterId: userId,
     });
@@ -163,7 +163,7 @@ router.post('/api/approval-requests', authenticateToken, async (req, res) => {
 router.patch('/api/approval-requests/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
-    const request = await storage.updateApprovalRequest(id, req.body);
+    const request = await approvalService.updateApprovalRequest(id, req.body);
     res.json(request);
   } catch (error: any) {
     console.error('Error updating request:', error);
@@ -178,7 +178,7 @@ router.post('/api/approval-actions', authenticateToken, async (req, res) => {
     const validated = insertApprovalActionSchema.parse(req.body);
     
     // Use transactional method to ensure atomic operations
-    const result = await storage.processApprovalAction({
+    const result = await approvalService.processApprovalAction({
       ...validated,
       approverId: userId,
     });

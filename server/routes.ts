@@ -1,6 +1,6 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage";
+import { authService, crmService, activityService, marketingService, dashboardService } from "./services";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { authenticateToken, requireManager, requireAdmin } from "./authMiddleware";
 import { insertContactSchema, insertCompanySchema, insertDealSchema, insertActivitySchema, insertEmailCampaignSchema } from "@shared/schema";
@@ -50,8 +50,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Legacy Replit OIDC route - keeping for backwards compatibility during migration
   app.get('/api/auth/replit-user', isAuthenticated, async (req: Request, res: Response) => {
     try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
+      const userId = (req as any).user?.claims?.sub;
+      const user = await authService.getUser(userId);
       res.json(user);
     } catch (error) {
       console.error("Error fetching user:", error);
@@ -62,7 +62,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // User routes (Manager/Admin only)
   app.get('/api/users', authenticateToken, requireManager, async (req: Request, res: Response) => {
     try {
-      const users = await storage.getAllUsers();
+      const users = await authService.getAllUsers();
       res.json(users);
     } catch (error) {
       console.error("Error fetching users:", error);
@@ -73,8 +73,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Dashboard routes
   app.get('/api/dashboard/metrics', authenticateToken, async (req: Request, res: Response) => {
     try {
-      const userId = req.user!.id;
-      const metrics = await storage.getDashboardMetrics(userId);
+      const userId = (req as any).user.id;
+      const metrics = await dashboardService.getDashboardMetrics(userId);
       res.json(metrics);
     } catch (error) {
       console.error("Error fetching dashboard metrics:", error);
@@ -84,8 +84,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/dashboard/pipeline', authenticateToken, async (req: Request, res: Response) => {
     try {
-      const userId = req.user!.id;
-      const pipeline = await storage.getPipelineStages(userId);
+      const userId = (req as any).user.id;
+      const pipeline = await crmService.getPipelineStages(userId);
       res.json(pipeline);
     } catch (error) {
       console.error("Error fetching pipeline:", error);
@@ -95,9 +95,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/dashboard/recent-activities', authenticateToken, async (req: Request, res: Response) => {
     try {
-      const userId = req.user!.id;
+      const userId = (req as any).user.id;
       const limit = parseInt(req.query.limit as string) || 10;
-      const activities = await storage.getRecentActivities(userId, limit);
+      const activities = await activityService.getRecentActivities(userId, limit);
       res.json(activities);
     } catch (error) {
       console.error("Error fetching recent activities:", error);
@@ -107,8 +107,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/dashboard/upcoming-tasks', authenticateToken, async (req: Request, res: Response) => {
     try {
-      const userId = req.user!.id;
-      const tasks = await storage.getUpcomingActivities(userId);
+      const userId = (req as any).user.id;
+      const tasks = await activityService.getUpcomingActivities(userId);
       res.json(tasks);
     } catch (error) {
       console.error("Error fetching upcoming tasks:", error);
@@ -119,8 +119,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Company routes
   app.get('/api/companies', authenticateToken, async (req: Request, res: Response) => {
     try {
-      const userId = req.user!.id;
-      const companies = await storage.getCompanies(userId);
+      const userId = (req as any).user.id;
+      const companies = await crmService.getCompanies(userId);
       res.json(companies);
     } catch (error) {
       console.error("Error fetching companies:", error);
@@ -130,8 +130,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/companies/:id', authenticateToken, async (req: Request, res: Response) => {
     try {
-      const userId = req.user!.id;
-      const company = await storage.getCompany(req.params.id, userId);
+      const userId = (req as any).user.id;
+      const company = await crmService.getCompany(req.params.id, userId);
       if (!company) {
         return res.status(404).json({ message: "Company not found" });
       }
@@ -144,9 +144,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/companies', authenticateToken, requireManager, async (req: Request, res: Response) => {
     try {
-      const userId = req.user!.id;
+      const userId = (req as any).user.id;
       const companyData = insertCompanySchema.parse({ ...req.body, ownerId: userId });
-      const company = await storage.createCompany(companyData);
+      const company = await crmService.createCompany(companyData);
       res.status(201).json(company);
     } catch (error) {
       console.error("Error creating company:", error);
@@ -159,9 +159,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put('/api/companies/:id', authenticateToken, requireManager, async (req: Request, res: Response) => {
     try {
-      const userId = req.user!.id;
+      const userId = (req as any).user.id;
       const companyData = insertCompanySchema.partial().parse(req.body);
-      const company = await storage.updateCompany(req.params.id, companyData, userId);
+      const company = await crmService.updateCompany(req.params.id, companyData, userId);
       res.json(company);
     } catch (error) {
       console.error("Error updating company:", error);
@@ -174,8 +174,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete('/api/companies/:id', authenticateToken, requireManager, async (req: Request, res: Response) => {
     try {
-      const userId = req.user!.id;
-      await storage.deleteCompany(req.params.id, userId);
+      const userId = (req as any).user.id;
+      await crmService.deleteCompany(req.params.id, userId);
       res.status(204).send();
     } catch (error) {
       console.error("Error deleting company:", error);
@@ -186,8 +186,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Contact routes
   app.get('/api/contacts', authenticateToken, async (req: Request, res: Response) => {
     try {
-      const userId = req.user!.id;
-      const contacts = await storage.getContacts(userId);
+      const userId = (req as any).user.id;
+      const contacts = await crmService.getContacts(userId);
       res.json(contacts);
     } catch (error) {
       console.error("Error fetching contacts:", error);
@@ -197,7 +197,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/contacts/:id', authenticateToken, async (req: Request, res: Response) => {
     try {
-      const contact = await storage.getContact(req.params.id);
+      const contact = await crmService.getContact(req.params.id);
       if (!contact) {
         return res.status(404).json({ message: "Contact not found" });
       }
@@ -210,14 +210,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/contacts', authenticateToken, async (req: Request, res: Response) => {
     try {
-      const userId = req.user!.id;
+      const userId = (req as any).user.id;
       // Convert "none" to null for companyId
       const requestData = { ...req.body, ownerId: userId };
       if (requestData.companyId === "none") {
         requestData.companyId = null;
       }
       const contactData = insertContactSchema.parse(requestData);
-      const contact = await storage.createContact(contactData);
+      const contact = await crmService.createContact(contactData);
       res.status(201).json(contact);
     } catch (error) {
       console.error("Error creating contact:", error);
@@ -236,7 +236,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         requestData.companyId = null;
       }
       const contactData = insertContactSchema.partial().parse(requestData);
-      const contact = await storage.updateContact(req.params.id, contactData);
+      const contact = await crmService.updateContact(req.params.id, contactData);
       res.json(contact);
     } catch (error) {
       console.error("Error updating contact:", error);
@@ -249,7 +249,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete('/api/contacts/:id', authenticateToken, requireManager, async (req: Request, res: Response) => {
     try {
-      await storage.deleteContact(req.params.id);
+      await crmService.deleteContact(req.params.id);
       res.status(204).send();
     } catch (error) {
       console.error("Error deleting contact:", error);
@@ -259,11 +259,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/contacts/import', authenticateToken, async (req: Request, res: Response) => {
     try {
-      const userId = req.user!.id;
+      const userId = (req as any).user.id;
       const contactsData = z.array(insertContactSchema).parse(
         req.body.map((contact: any) => ({ ...contact, ownerId: userId }))
       );
-      const contacts = await storage.importContacts(contactsData);
+      const contacts = await crmService.importContacts(contactsData);
       res.status(201).json(contacts);
     } catch (error) {
       console.error("Error importing contacts:", error);
@@ -276,8 +276,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/contacts/export', authenticateToken, async (req: Request, res: Response) => {
     try {
-      const userId = req.user!.id;
-      const contacts = await storage.getContacts(userId);
+      const userId = (req as any).user.id;
+      const contacts = await crmService.getContacts(userId);
       
       // Transform contacts for export, including company name
       const exportData = contacts.map(contact => ({
@@ -300,8 +300,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Deal routes
   app.get('/api/deals', authenticateToken, async (req: Request, res: Response) => {
     try {
-      const userId = req.user!.id;
-      const deals = await storage.getDeals(userId);
+      const userId = (req as any).user.id;
+      const deals = await crmService.getDeals(userId);
       res.json(deals);
     } catch (error) {
       console.error("Error fetching deals:", error);
@@ -311,7 +311,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/deals/:id', authenticateToken, async (req: Request, res: Response) => {
     try {
-      const deal = await storage.getDeal(req.params.id);
+      const deal = await crmService.getDeal(req.params.id);
       if (!deal) {
         return res.status(404).json({ message: "Deal not found" });
       }
@@ -324,9 +324,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/deals', authenticateToken, async (req: Request, res: Response) => {
     try {
-      const userId = req.user!.id;
+      const userId = (req as any).user.id;
       const dealData = insertDealSchema.parse({ ...req.body, ownerId: userId });
-      const deal = await storage.createDeal(dealData);
+      const deal = await crmService.createDeal(dealData);
       res.status(201).json(deal);
     } catch (error) {
       console.error("Error creating deal:", error);
@@ -340,7 +340,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put('/api/deals/:id', authenticateToken, async (req: Request, res: Response) => {
     try {
       const dealData = insertDealSchema.partial().parse(req.body);
-      const deal = await storage.updateDeal(req.params.id, dealData);
+      const deal = await crmService.updateDeal(req.params.id, dealData);
       res.json(deal);
     } catch (error) {
       console.error("Error updating deal:", error);
@@ -353,7 +353,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete('/api/deals/:id', authenticateToken, requireManager, async (req: Request, res: Response) => {
     try {
-      await storage.deleteDeal(req.params.id);
+      await crmService.deleteDeal(req.params.id);
       res.status(204).send();
     } catch (error) {
       console.error("Error deleting deal:", error);
@@ -363,8 +363,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/deals/export', authenticateToken, async (req: Request, res: Response) => {
     try {
-      const userId = req.user!.id;
-      const deals = await storage.getDeals(userId);
+      const userId = (req as any).user.id;
+      const deals = await crmService.getDeals(userId);
       
       // Transform deals for export, including contact and company names
       const exportData = deals.map(deal => ({
@@ -388,8 +388,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Activity routes
   app.get('/api/activities', authenticateToken, async (req: Request, res: Response) => {
     try {
-      const userId = req.user!.id;
-      const activities = await storage.getActivities(userId);
+      const userId = (req as any).user.id;
+      const activities = await activityService.getActivities(userId);
       res.json(activities);
     } catch (error) {
       console.error("Error fetching activities:", error);
@@ -399,7 +399,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/activities/:id', authenticateToken, async (req: Request, res: Response) => {
     try {
-      const activity = await storage.getActivity(req.params.id);
+      const activity = await activityService.getActivity(req.params.id);
       if (!activity) {
         return res.status(404).json({ message: "Activity not found" });
       }
@@ -412,7 +412,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/activities', authenticateToken, async (req: Request, res: Response) => {
     try {
-      const userId = req.user!.id;
+      const userId = (req as any).user.id;
       // Convert date strings and handle "none" values
       const requestData = { ...req.body, ownerId: userId };
       if (requestData.scheduledAt && typeof requestData.scheduledAt === 'string') {
@@ -425,7 +425,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         requestData.dealId = null;
       }
       const activityData = insertActivitySchema.parse(requestData);
-      const activity = await storage.createActivity(activityData);
+      const activity = await activityService.createActivity(activityData);
       res.status(201).json(activity);
     } catch (error) {
       console.error("Error creating activity:", error);
@@ -450,7 +450,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         requestData.dealId = null;
       }
       const activityData = insertActivitySchema.partial().parse(requestData);
-      const activity = await storage.updateActivity(req.params.id, activityData);
+      const activity = await activityService.updateActivity(req.params.id, activityData);
       res.json(activity);
     } catch (error) {
       console.error("Error updating activity:", error);
@@ -463,7 +463,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete('/api/activities/:id', authenticateToken, requireManager, async (req: Request, res: Response) => {
     try {
-      await storage.deleteActivity(req.params.id);
+      await activityService.deleteActivity(req.params.id);
       res.status(204).send();
     } catch (error) {
       console.error("Error deleting activity:", error);
@@ -474,8 +474,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Email campaign routes
   app.get('/api/campaigns', authenticateToken, async (req: Request, res: Response) => {
     try {
-      const userId = req.user!.id;
-      const campaigns = await storage.getCampaigns(userId);
+      const userId = (req as any).user.id;
+      const campaigns = await marketingService.getCampaigns(userId);
       res.json(campaigns);
     } catch (error) {
       console.error("Error fetching campaigns:", error);
@@ -485,7 +485,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/campaigns/:id', authenticateToken, async (req: Request, res: Response) => {
     try {
-      const campaign = await storage.getCampaign(req.params.id);
+      const campaign = await marketingService.getCampaign(req.params.id);
       if (!campaign) {
         return res.status(404).json({ message: "Campaign not found" });
       }
@@ -498,9 +498,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/campaigns', authenticateToken, requireManager, async (req: Request, res: Response) => {
     try {
-      const userId = req.user!.id;
+      const userId = (req as any).user.id;
       const campaignData = insertEmailCampaignSchema.parse({ ...req.body, ownerId: userId });
-      const campaign = await storage.createCampaign(campaignData);
+      const campaign = await marketingService.createCampaign(campaignData);
       res.status(201).json(campaign);
     } catch (error) {
       console.error("Error creating campaign:", error);
@@ -531,7 +531,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put('/api/campaigns/:id', authenticateToken, requireManager, async (req: Request, res: Response) => {
     try {
       const campaignData = insertEmailCampaignSchema.partial().parse(req.body);
-      const campaign = await storage.updateCampaign(req.params.id, campaignData);
+      const campaign = await marketingService.updateCampaign(req.params.id, campaignData);
       res.json(campaign);
     } catch (error) {
       console.error("Error updating campaign:", error);
@@ -544,7 +544,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete('/api/campaigns/:id', authenticateToken, requireManager, async (req: Request, res: Response) => {
     try {
-      await storage.deleteCampaign(req.params.id);
+      await marketingService.deleteCampaign(req.params.id);
       res.status(204).send();
     } catch (error) {
       console.error("Error deleting campaign:", error);
