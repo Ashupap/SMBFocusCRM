@@ -24,6 +24,15 @@ Preferred communication style: Simple, everyday language.
 - **API Design**: RESTful API with structured error handling
 - **Token Management**: JWT-based stateless authentication
 - **File Structure**: Monorepo structure with shared types between client and server
+- **Service Layer**: Domain-specific services under `server/services/`:
+  - `AuthService`: User operations, authentication, tokens, audit logging
+  - `CrmService`: Companies, contacts, deals, pipeline stages
+  - `ActivityService`: Activity tracking with contact/deal relations
+  - `MarketingService`: Email campaigns, templates, sequences, enrollments
+  - `ApprovalService`: Approval workflows, requests, and actions (uses db.transaction for atomicity)
+  - `DashboardService`: Metrics, widgets, lead scores, forecasts, analytics
+  - `IntegrationService`: API keys, calendar events, synced emails
+  - `StorageFacade`: Backward-compatible facade delegating to all services
 
 ## Database Architecture
 - **Database**: PostgreSQL with connection pooling via Neon serverless
