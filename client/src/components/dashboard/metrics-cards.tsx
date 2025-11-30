@@ -1,7 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
-import { DollarSign, Handshake, Percent, Users } from "lucide-react";
+import { IndianRupee, Handshake, Percent, Users } from "lucide-react";
 import type { DashboardMetrics } from "@shared/schema";
+import { formatCurrency } from "@/lib/currency";
 
 export default function MetricsCards() {
   const { data: metrics, isLoading } = useQuery<DashboardMetrics>({
@@ -26,10 +27,10 @@ export default function MetricsCards() {
   const metricCards = [
     {
       title: "Total Revenue",
-      value: `$${metrics?.totalRevenue.toLocaleString() || '0'}`,
+      value: formatCurrency(metrics?.totalRevenue || 0),
       change: `+${metrics?.revenueGrowth || 0}%`,
       changeLabel: "from last month",
-      icon: DollarSign,
+      icon: IndianRupee,
       iconColor: "text-chart-1",
       iconBg: "bg-chart-1/10",
       testId: "metric-total-revenue",

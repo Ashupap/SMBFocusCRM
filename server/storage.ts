@@ -80,6 +80,14 @@ import {
   type InsertSalesPerformance,
   type ScheduledExport,
   type InsertScheduledExport,
+  type ApprovalWorkflow,
+  type InsertApprovalWorkflow,
+  type WorkflowStep,
+  type InsertWorkflowStep,
+  type ApprovalRequest,
+  type InsertApprovalRequest,
+  type ApprovalAction,
+  type InsertApprovalAction,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, asc, count, sum, and, gte, lt, sql, isNull } from "drizzle-orm";
@@ -92,10 +100,10 @@ export interface IStorage {
 
   // Company operations
   getCompanies(ownerId: string): Promise<Company[]>;
-  getCompany(id: string): Promise<Company | undefined>;
+  getCompany(id: string, ownerId?: string): Promise<Company | undefined>;
   createCompany(company: InsertCompany): Promise<Company>;
-  updateCompany(id: string, company: Partial<InsertCompany>): Promise<Company>;
-  deleteCompany(id: string): Promise<void>;
+  updateCompany(id: string, company: Partial<InsertCompany>, ownerId?: string): Promise<Company>;
+  deleteCompany(id: string, ownerId?: string): Promise<void>;
 
   // Contact operations
   getContacts(ownerId: string): Promise<(Contact & { company?: Company })[]>;
@@ -254,6 +262,9 @@ export interface IStorage {
   updateApprovalRequest(id: string, request: Partial<InsertApprovalRequest>): Promise<ApprovalRequest>;
   getApprovalActions(requestId: string): Promise<(ApprovalAction & { approver?: User })[]>;
   createApprovalAction(action: InsertApprovalAction): Promise<ApprovalAction>;
+  
+  // Transactional approval action processing
+  processApprovalAction(action: InsertApprovalAction): Promise<{ action: ApprovalAction; request: ApprovalRequest }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -284,12 +295,21 @@ export class DatabaseStorage implements IStorage {
 
   // Company operations
   async getCompanies(ownerId: string): Promise<Company[]> {
-    // Note: Companies don't have ownerId field - they are shared across all users in this CRM
-    // This is by design for B2B CRM where companies are shared entities
-    return await db.select().from(companies).orderBy(asc(companies.name));
+    return await db
+      .select()
+      .from(companies)
+      .where(eq(companies.ownerId, ownerId))
+      .orderBy(asc(companies.name));
   }
 
-  async getCompany(id: string): Promise<Company | undefined> {
+  async getCompany(id: string, ownerId?: string): Promise<Company | undefined> {
+    if (ownerId) {
+      const [company] = await db
+        .select()
+        .from(companies)
+        .where(and(eq(companies.id, id), eq(companies.ownerId, ownerId)));
+      return company;
+    }
     const [company] = await db.select().from(companies).where(eq(companies.id, id));
     return company;
   }
@@ -299,17 +319,23 @@ export class DatabaseStorage implements IStorage {
     return newCompany;
   }
 
-  async updateCompany(id: string, company: Partial<InsertCompany>): Promise<Company> {
+  async updateCompany(id: string, company: Partial<InsertCompany>, ownerId?: string): Promise<Company> {
+    const whereClause = ownerId 
+      ? and(eq(companies.id, id), eq(companies.ownerId, ownerId))
+      : eq(companies.id, id);
     const [updatedCompany] = await db
       .update(companies)
       .set({ ...company, updatedAt: new Date() })
-      .where(eq(companies.id, id))
+      .where(whereClause)
       .returning();
     return updatedCompany;
   }
 
-  async deleteCompany(id: string): Promise<void> {
-    await db.delete(companies).where(eq(companies.id, id));
+  async deleteCompany(id: string, ownerId?: string): Promise<void> {
+    const whereClause = ownerId 
+      ? and(eq(companies.id, id), eq(companies.ownerId, ownerId))
+      : eq(companies.id, id);
+    await db.delete(companies).where(whereClause);
   }
 
   // Contact operations
@@ -1486,6 +1512,85 @@ export class DatabaseStorage implements IStorage {
       .values(action)
       .returning();
     return newAction;
+  }
+
+  async processApprovalAction(action: InsertApprovalAction): Promise<{ action: ApprovalAction; request: ApprovalRequest }> {
+    return await db.transaction(async (tx) => {
+      // Step 1: Create the approval action
+      const [newAction] = await tx
+        .insert(approvalActions)
+        .values(action)
+        .returning();
+
+      // Step 2: Get the approval request
+      const [request] = await tx
+        .select()
+        .from(approvalRequests)
+        .where(eq(approvalRequests.id, action.requestId));
+
+      if (!request) {
+        throw new Error('Approval request not found');
+      }
+
+      // Step 3: Update request status based on action
+      let updatedRequest: ApprovalRequest;
+
+      if (action.action === 'rejected') {
+        // If rejected, mark request as rejected
+        const [updated] = await tx
+          .update(approvalRequests)
+          .set({
+            status: 'rejected',
+            completedAt: new Date(),
+          })
+          .where(eq(approvalRequests.id, action.requestId))
+          .returning();
+        updatedRequest = updated;
+      } else if (action.action === 'approved') {
+        // Get workflow steps to determine next action
+        const steps = await tx
+          .select()
+          .from(workflowSteps)
+          .where(eq(workflowSteps.workflowId, request.workflowId))
+          .orderBy(asc(workflowSteps.stepOrder));
+
+        const currentStep = steps.find(s => s.id === action.stepId);
+        const currentStepOrder = currentStep?.stepOrder || 0;
+        const maxStepOrder = Math.max(...steps.map(s => s.stepOrder));
+
+        if (currentStepOrder >= maxStepOrder) {
+          // Last step - mark as approved
+          const [updated] = await tx
+            .update(approvalRequests)
+            .set({
+              status: 'approved',
+              completedAt: new Date(),
+            })
+            .where(eq(approvalRequests.id, action.requestId))
+            .returning();
+          updatedRequest = updated;
+        } else {
+          // Move to next step
+          const nextStep = steps.find(s => s.stepOrder === currentStepOrder + 1);
+          if (nextStep) {
+            const [updated] = await tx
+              .update(approvalRequests)
+              .set({
+                currentStepId: nextStep.id,
+              })
+              .where(eq(approvalRequests.id, action.requestId))
+              .returning();
+            updatedRequest = updated;
+          } else {
+            updatedRequest = request;
+          }
+        }
+      } else {
+        updatedRequest = request;
+      }
+
+      return { action: newAction, request: updatedRequest };
+    });
   }
 }
 

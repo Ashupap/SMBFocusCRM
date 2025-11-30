@@ -8,6 +8,7 @@ import MetricsCards from "@/components/dashboard/metrics-cards";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from "recharts";
 import type { DashboardMetrics } from "@shared/schema";
+import { formatCurrency, formatCompactCurrency } from "@/lib/currency";
 
 export default function Reports() {
   const { toast } = useToast();
@@ -82,7 +83,7 @@ export default function Reports() {
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="month" />
                     <YAxis />
-                    <Tooltip formatter={(value) => [`$${value.toLocaleString()}`, 'Revenue']} />
+                    <Tooltip formatter={(value) => [formatCurrency(value as number), 'Revenue']} />
                     <Line 
                       type="monotone" 
                       dataKey="revenue" 
@@ -175,7 +176,7 @@ export default function Reports() {
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Average Deal Value</span>
                   <span className="font-semibold">
-                    ${metrics ? (metrics.totalRevenue / Math.max(metrics.activeDeals, 1)).toLocaleString() : '0'}
+                    {metrics ? formatCurrency(metrics.totalRevenue / Math.max(metrics.activeDeals, 1)) : '₹0'}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
@@ -184,7 +185,7 @@ export default function Reports() {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Active Pipeline Value</span>
-                  <span className="font-semibold">${metrics?.totalRevenue.toLocaleString()}</span>
+                  <span className="font-semibold">{formatCurrency(metrics?.totalRevenue || 0)}</span>
                 </div>
               </CardContent>
             </Card>
@@ -217,12 +218,12 @@ export default function Reports() {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">Monthly Revenue Target</span>
-                    <span className="font-semibold">$150K</span>
+                    <span className="font-semibold">{formatCompactCurrency(1500000)}</span>
                   </div>
                   <div className="w-full bg-muted rounded-full h-2">
                     <div 
                       className="bg-chart-1 h-2 rounded-full" 
-                      style={{ width: `${Math.min((metrics?.totalRevenue || 0) / 150000 * 100, 100)}%` }}
+                      style={{ width: `${Math.min((metrics?.totalRevenue || 0) / 1500000 * 100, 100)}%` }}
                     />
                   </div>
                 </div>

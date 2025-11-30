@@ -2,6 +2,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import type { Deal, Contact, Company } from "@shared/schema";
+import { formatCurrency } from "@/lib/currency";
 
 interface DealCardProps {
   deal: Deal & { contact?: Contact; company?: Company };
@@ -14,16 +15,6 @@ export default function DealCard({ deal, onStageChange, showStageSelector = fals
     if (onStageChange) {
       onStageChange(deal.id, newStage);
     }
-  };
-
-  const formatCurrency = (value: string | number) => {
-    const num = typeof value === 'string' ? parseFloat(value) : value;
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(num);
   };
 
   const getProbabilityColor = (probability: number) => {

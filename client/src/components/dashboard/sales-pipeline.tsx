@@ -13,6 +13,7 @@ import { convertToCSV, downloadCSV, generateTimestamp, dealExportHeaders } from 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Plus, Download, Loader2 } from "lucide-react";
 import type { PipelineStage, Deal } from "@shared/schema";
+import { formatCompactCurrency } from "@/lib/currency";
 
 interface SalesPipelineProps {
   showActions?: boolean;
@@ -89,7 +90,7 @@ export default function SalesPipeline({ showActions = false }: SalesPipelineProp
         return;
       }
       
-      const csvContent = convertToCSV(data, dealExportHeaders as Array<{ key: string; label: string }>);
+      const csvContent = convertToCSV(data, [...dealExportHeaders] as Array<{ key: string; label: string }>);
       const timestamp = generateTimestamp();
       downloadCSV(csvContent, `deals_export_${timestamp}.csv`);
       toast({
@@ -230,7 +231,7 @@ export default function SalesPipeline({ showActions = false }: SalesPipelineProp
               <div className="flex items-center justify-between">
                 <h4 className="font-medium text-sm capitalize">{stage.stage}</h4>
                 <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
-                  ${(stage.totalValue / 1000).toFixed(1)}K
+                  {formatCompactCurrency(stage.totalValue)}
                 </span>
               </div>
               

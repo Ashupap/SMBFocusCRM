@@ -171,55 +171,19 @@ router.patch('/api/approval-requests/:id', authenticateToken, async (req, res) =
   }
 });
 
-// Approval Action Routes
+// Approval Action Routes - Using transactional processing for data integrity
 router.post('/api/approval-actions', authenticateToken, async (req, res) => {
   try {
     const userId = (req.user as any).id;
     const validated = insertApprovalActionSchema.parse(req.body);
     
-    const action = await storage.createApprovalAction({
+    // Use transactional method to ensure atomic operations
+    const result = await storage.processApprovalAction({
       ...validated,
       approverId: userId,
     });
     
-    // Update the request status based on the action
-    const { requestId } = validated;
-    const request = await storage.getApprovalRequest(requestId);
-    
-    if (request) {
-      // If action is 'rejected', mark request as rejected
-      if (validated.action === 'rejected') {
-        await storage.updateApprovalRequest(requestId, {
-          status: 'rejected',
-          completedAt: new Date(),
-        });
-      } else if (validated.action === 'approved') {
-        // Check if all steps are approved
-        const steps = await storage.getWorkflowSteps(request.workflowId);
-        const actions = await storage.getApprovalActions(requestId);
-        
-        // Simple logic: if this is the last step, mark as approved
-        const currentStepOrder = steps.find(s => s.id === validated.stepId)?.stepOrder || 0;
-        const maxStepOrder = Math.max(...steps.map(s => s.stepOrder));
-        
-        if (currentStepOrder >= maxStepOrder) {
-          await storage.updateApprovalRequest(requestId, {
-            status: 'approved',
-            completedAt: new Date(),
-          });
-        } else {
-          // Move to next step
-          const nextStep = steps.find(s => s.stepOrder === currentStepOrder + 1);
-          if (nextStep) {
-            await storage.updateApprovalRequest(requestId, {
-              currentStepId: nextStep.id,
-            });
-          }
-        }
-      }
-    }
-    
-    res.json(action);
+    res.json(result.action);
   } catch (error: any) {
     console.error('Error creating action:', error);
     res.status(500).json({ error: error.message || 'Failed to create action' });

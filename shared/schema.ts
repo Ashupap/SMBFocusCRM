@@ -59,6 +59,7 @@ export const companies = pgTable("companies", {
   phone: varchar("phone"),
   address: text("address"),
   notes: text("notes"),
+  ownerId: varchar("owner_id").references(() => users.id).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
